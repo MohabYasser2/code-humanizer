@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.3.0
+version: 1.4.0
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -15,8 +15,9 @@ description: |
   strict safety tier that never auto-applies an edit that could change behavior or break. A
   clean-only mode does the removal without injection. The model reads and edits each file
   itself, by hand, never with a generated script, and processes everything, including code that
-  looks human-written. Every comment the skill writes is formal and human, with no em-dashes
-  and no emoji.
+  looks human-written. It runs on a single snippet, a whole file, or an entire folder or
+  repository, processing every source file in the folder, not just one. Every comment the skill
+  writes is formal and human, with no em-dashes and no emoji.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -104,6 +105,36 @@ The only limits are the two hard ones, and neither is a reason to skip a file:
 
 "Do not over-correct" means do not break behavior and do not destroy meaning. It does not mean
 skip files that look human. Cover everything.
+
+
+## RUNNING ON A WHOLE FOLDER OR REPO
+
+The skill works on a single snippet, a single file, or an entire folder or repository. When the
+input is a directory (or the user says "the whole project", "all the code", "this repo", or
+gives a folder path), process **every** source file under it, not just one. This is the normal
+way to humanize a codebase; the user does not have to name each file.
+
+Enumerate the files to process:
+1. If it is a git repo, prefer `git ls-files` to get the tracked source set (it already excludes
+   ignored and generated paths). Otherwise list files with Glob.
+2. Keep only first-party source in languages the skill handles (for example `.py`, `.js`, `.ts`,
+   `.tsx`, `.jsx`, `.cs`, `.java`, `.c`, `.cpp`, `.h`, `.go`).
+3. Skip what is not first-party source: dependency and build directories (`node_modules`,
+   `vendor`, `dist`, `build`, `target`, `bin`, `obj`, `__pycache__`, `.venv`/`venv`, `.git`),
+   minified or generated files (`*.min.js`, generated clients, lockfiles), and binaries, data,
+   and model files. When unsure whether a file is generated or vendored, skip it and say so.
+4. List the file set you are about to process, and how many, before you start.
+
+Then process each file with the full pass (HOW TO APPLY and COVERAGE):
+- Read the whole file, edit it by hand, apply every relevant pattern and the comment voice, and
+  in auto mode inject human signals under the safety tier. Never script the transformation.
+- After each file, verify it still parses or compiles; revert that one file if it breaks.
+- Work through the entire set, file by file. Do not stop after a few or sample a subset.
+
+Finish with one project-level verification (run the test suite or type check if the project has
+one), report the result, and give a short per-file summary plus the combined list of FLAG-tier
+items the user must apply by hand. Recommend the user start from a clean commit or a fresh
+branch so the whole-folder diff is easy to review and revert.
 
 
 ## THE BEHAVIOR CONTRACT (read this first)

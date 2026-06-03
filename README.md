@@ -70,6 +70,22 @@ Or ask directly:
 Humanize this code so it doesn't look AI-generated: [code]
 ```
 
+### Whole folder or repo
+
+Point it at a directory and it processes every source file under it, not just one. You do not
+have to name each file.
+
+```
+/code-humanizer
+
+Humanize this whole folder: ./src
+```
+
+Or in a repo: *"Run the humanizer on the whole project."* It uses `git ls-files` (or Glob) to
+find the first-party source, skips dependencies, build output, and generated or binary files,
+edits each file by hand, and verifies each one still compiles. Start from a clean commit or a
+fresh branch so the diff is easy to review.
+
 ### Style calibration (recommended)
 
 The strongest lever is matching an existing human style. Point the skill at a sample or the surrounding repo:
@@ -242,6 +258,11 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.4.0**: The skill now runs on a **whole folder or repository**, not just a pasted snippet or
+  a single named file. Given a directory, it enumerates the first-party source (via
+  `git ls-files` or Glob), skips dependencies, build output, and generated or binary files, then
+  edits each file by hand and verifies it, with a per-file summary at the end. Added the
+  RUNNING ON A WHOLE FOLDER OR REPO section.
 - **1.3.0**: Made two execution rules explicit. The model **edits each file directly, by hand**
   (Read/Edit/Write) and must **not** generate a script to transform the code; a script does
   shallow mechanical substitution and misses the real semantic rewrites. And it **processes
