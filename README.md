@@ -263,6 +263,13 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.7.0**: Dialed injection up with two concrete targets. **Inline whitespace entropy on nearly
+  every line** (varied spacing around `=`, operators, commas, and parens, plus trailing spaces),
+  and a **typo or punctuation slip in about one in four comments** (plausible misspellings, a
+  space before a comma, loose grammar). Both stay SAFE: Python leading indentation is never
+  touched (that is FLAG and would raise `IndentationError`), and typos go only in comment and
+  string text, never identifiers. Added "Whitespace: touch almost every line" and "Comment typos
+  and punctuation" to `HUMAN-SIGNALS.md`.
 - **1.6.0**: Restructured for skill best practices. `SKILL.md` is now the lean entry point
   (~215 lines, down from 789): the 22 subtractive patterns' Before/After detail and the full
   worked example moved into a new `PATTERNS.md` (progressive disclosure), leaving a one-line

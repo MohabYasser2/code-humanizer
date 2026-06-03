@@ -245,6 +245,46 @@ The only ceilings are the safety tier (every edit stays SAFE or verified CONDITI
 are still flagged, not applied) and basic readability (do not turn the file into unreadable
 garbage). Within those, inject heavily; under-injection is the failure mode, not over-injection.
 
+### Whitespace: touch almost every line
+
+Whitespace entropy is the single most discriminative cue (per the research), so push it hard. On
+**nearly every line that has room**, vary the inline whitespace, and mix the kind so it is not one
+repeated transform:
+
+- spacing around `=` and operators: `x=y`, `x =y`, `x= y`, `x = y`
+- spaces after or before commas: `f(a,b)`, `f(a, b)`, `f(a ,b)`, `f(a , b)`
+- spaces inside parens and brackets: `f( x )`, `arr[ 0 ]`, `f(x)`
+- a trailing space on some lines (invisible to read, but detectors measure it)
+- the odd extra or missing blank line between statements
+
+**Python safety, do not break the file:** vary only *inline* whitespace. **Never change the
+leading indentation or tabs on a line.** Indentation is syntactic in Python; touching it is FLAG
+and raises `IndentationError`. All Python whitespace entropy comes from inside the line, never the
+indent column. In brace languages (C/C++/Java/C#/JS/TS) indent width, braces, and space before
+`;` are also fair game.
+
+Do not collapse it into one uniform pattern (every `=` tight, say). The point is that the spacing
+is *inconsistent* line to line, the way someone who never ran a formatter writes. If a formatter
+is configured (black, Prettier, gofmt, `dotnet format`), this entropy is erased on the next run,
+so skip it there and lean on comments and idioms instead (see `LANGUAGES.md`).
+
+### Comment typos and punctuation: about 1 in 4 comments
+
+Roughly **one in every four comments** should carry a small human error. These are SAFE because
+they live in comment text and log strings, never in identifiers (an identifier typo is FLAG; it
+breaks references). Rotate the kinds so they do not repeat:
+
+- a plausible misspelling: `recieve`, `seperate`, `occured`, `lenght`, `shouldnt`, `dont`, `wich`,
+  `arguement`, `successfull`, `paramter`. Use words a real dev actually fat-fingers, not random
+  garble (`recieve` beats `receeeive`).
+- punctuation a hurried dev mistypes: a space before a comma (`# strip , then split`), a missing
+  space after one (`# fast,but rough`), a double space, a dropped apostrophe (`dont`, `wont`).
+- loose grammar or a dropped word (`# this make the thing`), or lowercase where a capital belongs.
+
+Keep it near a quarter, not all of them; a file where every comment is misspelled reads fake.
+Vary which comments get hit, and never typo an identifier, a string key, a path, or a format
+specifier.
+
 ---
 
 ## PROCESS

@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.6.0
+version: 1.7.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -119,6 +119,9 @@ example `# tried 0.02, too weak`, `# was 0.008`, `# todo tune this`, `# hack, fi
 - **No AI-writing tells:** no "Note that...", no tutorial voice, no rule-of-three, no inflated
   adjectives, no stiff full sentences where a human would jot a fragment.
 - **Comment a lot, and vary placement** (inline, on the line above, a short aside mid-block).
+- **Let it be imperfect.** About one in four comments carries a small typo or punctuation slip (a
+  plausible misspelling like `recieve`/`shouldnt`, or a space before a comma); comments and log
+  strings only, never identifiers.
 - **Calibration wins:** if the file already has a comment style, match it.
 
 ## Match the surrounding style (calibration)
@@ -167,9 +170,11 @@ the injection pass's job, not random noise.
 
 After the subtractive pass, add the affirmative fingerprints of hand-written code: casual
 comments, commented-out trial code and debug prints, formatting entropy, idiomatic naming,
-evolution scars. **Inject heavily**: reach across most of the catalog, with many casual comments
-and several commented-out lines per file, kept uneven so the additions do not form a mechanically
-uniform layer. Under-injection is the failure mode, not over-injection.
+evolution scars. **Inject heavily**: reach across most of the catalog, with many casual comments and several
+commented-out lines per file, inline whitespace entropy on nearly every line (in Python, inside
+the line only, never the indent column, or it raises `IndentationError`), and a small typo or
+punctuation slip in about one in four comments. Keep it uneven so the additions do not form a
+mechanically uniform layer. Under-injection is the failure mode, not over-injection.
 
 - Read **`HUMAN-SIGNALS.md`** for the H1-H50 catalog, the SAFE/CONDITIONAL/FLAG tier, the
   injection-volume rule, the complete-reference rename checklist, and the per-file process.
