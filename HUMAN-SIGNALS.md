@@ -210,11 +210,18 @@ Grouped for reference. Apply a *subset*, at *uneven* density, see the density ru
 ## THE DENSITY RULE (the part most people get wrong)
 
 A *uniform* layer of injected noise is just a new, detectable uniformity. Per the research,
-human inconsistency is **inconsistently** distributed. So:
+human inconsistency is **inconsistently** distributed.
+
+**Coverage first, then uneven density.** Density governs the *injection* only. Every file is
+still read in full and gets the complete subtractive pass and the formal comment voice (see
+COVERAGE in `SKILL.md`); you never skip a file or leave an AI tell in. The unevenness below
+controls only *where the injected human signals land*, so the additions do not form their own
+uniform layer. So:
 
 1. **Apply a random subset, not all of it.** Pick ~5-10 signal *types* for a file, not 50.
-2. **Vary density by region.** Leave one function almost clean; rough up another. Real code
-   has a careful core and a rushed edge (evolution scars, H35/H39).
+2. **Vary injection density by region.** Inject few signals into one function and more into
+   another (that function is still cleaned and its comments still normalized). Real code has a
+   careful core and a rushed edge (evolution scars, H35/H39).
 3. **Don't make every line messy.** Operator-spacing entropy means *some* `=` have spaces and
    *some* don't, not that none do.
 4. **Match plausibility.** A misspelling a real dev makes (`recieve`) beats a random one
@@ -227,6 +234,9 @@ pass is usually enough, the subtractive pass already removes ~80% of the AI sign
 ---
 
 ## PROCESS
+
+Make every edit by hand (Read, then Edit/Write); never script the transformation. See **HOW TO
+APPLY** in `SKILL.md`.
 
 1. **Confirm the mode.** This track runs in auto mode (the default) and additive mode; skip it only in clean-only mode.
 2. **Branch on language.** Build the safe set from the LANGUAGE BRANCH table. In Python, drop

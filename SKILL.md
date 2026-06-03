@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.2.0
+version: 1.3.0
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -13,8 +13,10 @@ description: |
   removes those AI tells and then injects the affirmative fingerprints of hand-written code
   (formatting entropy, commented-out code, lived-in comments, idiosyncratic naming) under a
   strict safety tier that never auto-applies an edit that could change behavior or break. A
-  clean-only mode does the removal without injection. Every comment the skill writes is formal
-  and human, with no em-dashes and no emoji.
+  clean-only mode does the removal without injection. The model reads and edits each file
+  itself, by hand, never with a generated script, and processes everything, including code that
+  looks human-written. Every comment the skill writes is formal and human, with no em-dashes
+  and no emoji.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -61,9 +63,47 @@ whole of clean-only mode:
 1. **Identify AI patterns**: scan for the patterns listed below.
 2. **Rewrite, preserve behavior**: change style and structure, never logic. See THE BEHAVIOR CONTRACT.
 3. **Match the surrounding style**: fit the file's or repo's existing conventions (see Style Calibration). When none is given, default to plain, idiomatic Python.
-4. **Don't over-correct**: clean code is not proof of AI. See DETECTION GUIDANCE before gutting anything.
+4. **Cover everything, preserve meaning**: process every region, including human-looking code (see COVERAGE). Keep comments that record a real why; rewrite them to the formal voice rather than deleting them.
 
 The draft → behavior-check → audit → final loop and the deliverable are defined under Process and Output, below.
+
+
+## HOW TO APPLY (you edit the code yourself; never script it)
+
+You make every change yourself, by reading each file in full and editing it directly with your
+own tools (Read, then Edit or Write). Do **not** write or run a script (sed, awk, perl, a Python
+or regex find-and-replace, an automated codemod) to transform the code. A script does blind,
+mechanical substitution: it catches only the one pattern you encoded, applies no judgment,
+misses every semantic rewrite (renaming, restructuring, idiom changes, rephrasing a comment to
+the formal voice), and can corrupt syntax it does not understand. The result is a shallow diff,
+for example swapping a single punctuation mark, instead of a real humanization. Scripts are
+allowed only for verification after you have made the edits by hand: running tests, a type
+check, a compile, or a parse check.
+
+Work file by file:
+1. Read the whole file first and understand what it does.
+2. Apply every relevant pattern and signal yourself, edit by edit, choosing each change with an
+   understanding of the surrounding code. When you replace an em-dash in a comment, pick the
+   formal punctuation the sentence needs (a period, comma, semicolon, colon, or parentheses),
+   not a blanket hyphen.
+3. Go top to bottom and cover the entire file. See COVERAGE.
+
+
+## COVERAGE (process everything, even code that looks human)
+
+Run the full pass on every file, function, and block you are given, top to bottom. Do not skip
+anything because it "looks human-written" or "looks already clean." Suspected-human code still
+gets the full treatment: re-read it, normalize its comments to the formal voice (COMMENT VOICE),
+remove any AI tells present, and, in auto mode, inject the human signals the safety tier allows.
+
+The only limits are the two hard ones, and neither is a reason to skip a file:
+- **Behavior.** Every edit obeys THE BEHAVIOR CONTRACT and the SAFE/CONDITIONAL/FLAG tier. FLAG
+  items are still flagged, not applied.
+- **Meaning.** Do not delete a comment that records a real reason (a why, a constraint, a
+  ticket). Rewrite it to the formal voice instead of dropping it.
+
+"Do not over-correct" means do not break behavior and do not destroy meaning. It does not mean
+skip files that look human. Cover everything.
 
 
 ## THE BEHAVIOR CONTRACT (read this first)
@@ -578,39 +618,41 @@ commented-out trial code, lived-in `FIXME`s, idiosyncratic naming, evolution sca
   breaks.
 
 
-## DETECTION GUIDANCE
+## WHAT TO PRESERVE (while still processing everything)
 
-### What NOT to flag (false positives)
+Process every file fully (see COVERAGE). "Preserve" here means do not destroy meaning and do not
+break behavior; it never means skip the file. When you meet the following, still apply the
+formatting, the comment voice, and (in auto mode) the human-signal injection, but keep the
+underlying content intact:
 
-Clean code is not a confession. Before rewriting, make sure you are not gutting good work:
+- **A typed codebase** stays typed. Do not strip annotations to look casual.
+- **Genuinely useful docstrings** on public APIs and complex functions are good practice. Keep
+  the content, and bring the wording into the formal voice.
+- **Comments that explain *why*** (a workaround, a constraint, a ticket reference) are the most
+  human thing in a file. Never delete them; rephrase to the formal voice if needed.
+- **A real `__main__`, real logging, real error handling** for reachable failures are
+  legitimate. Do not remove them as "AI tells."
+- **Project conventions** (a mandated envelope return, a house naming scheme) outrank your idiom
+  preferences. Match them.
 
-- **Polished code from a senior developer** looks a lot like AI output. Formatting and consistency alone prove nothing.
-- **A typed codebase** should stay typed. Don't strip annotations to look casual.
-- **Genuinely useful docstrings** on public APIs and complex functions are good practice, keep them.
-- **Comments that explain *why*** (a workaround, a constraint, a ticket reference) are the most human thing in a file. Never delete them.
-- **A real `__main__`, real logging, real error handling** for reachable failures, all legitimate. Don't remove them as "AI tells."
-- **Project conventions** (a mandated envelope return, a house naming scheme) outrank your idiom preferences.
+These guard against destroying meaning; they are not licence to skip. Polished code from a
+senior developer, or a file that is entirely clean human code, still gets the full comment-voice
+and formatting pass, and in auto mode the human-signal injection, because that is the job.
 
-Look for **clusters**, not single signals. One docstring is nothing; docstrings on every trivial function *plus* `# Step 1` comments *plus* `process_data(data)` *plus* a swallow-all `except` is the confession.
+### Human code still gets processed
 
-### Signs of human code to preserve
-
-When you see these, lean toward leaving the code alone:
-
-- `TODO` / `FIXME` / `HACK` with real context.
-- Pragmatic shortcuts and terse local names (`i`, `tmp`, `cfg`).
-- Domain-specific vocabulary that encodes intent.
-- Comments referencing tickets, decisions, or past bugs.
-- Intentional, consistent personal/team style, even if it isn't "textbook."
-- Uneven polish: a careful core with a rushed edge is what real, maintained code looks like.
+`TODO`/`FIXME`/`HACK` with real context, terse local names (`i`, `tmp`, `cfg`), domain
+vocabulary, references to tickets or past bugs, and uneven polish are all genuine human content.
+Keep that content. The file still receives the full formatting and comment-voice pass, and in
+auto mode the human-signal injection. Human-looking code is not a reason to do less.
 
 
 ## Process and Output
 
-1. Read the code (and the surrounding file/repo for style). Identify every instance of the patterns above.
-2. Write a **draft rewrite**, changing only style and structure. Match the calibrated style. Preserve success-path behavior exactly.
-3. **Behavior-preservation check.** Re-read the draft against the original: same signatures, control flow, returns, side effects, ordering? List any failure-path changes (e.g., a removed blanket `except`). Run tests / type checker / linter if the project has them, and report results.
-4. **Audit pass.** Ask: **"What still reads as AI here?"** Answer briefly with any residual tells.
+1. **Read each file in full yourself**, top to bottom (and the surrounding file/repo for style). Identify every instance of the patterns above. Cover the whole file; do not sample or stop early.
+2. **Edit directly, by hand.** Apply the changes yourself with Read/Edit/Write, never through a generated script (see HOW TO APPLY). Change only style and structure (plus injection in auto and additive modes). Match the calibrated style. Preserve success-path behavior exactly.
+3. **Behavior-preservation check.** Re-read your edits against the original: same signatures, control flow, returns, side effects, ordering? List any failure-path changes (e.g., a removed blanket `except`). Run tests / type checker / linter if the project has them, and report results.
+4. **Audit pass.** Ask: **"What still reads as AI, and what did I skip?"** Name any residual tells and any region you passed over, then go back and cover it.
 5. Revise into a **final rewrite** that addresses them.
 
 Deliver: the **final rewritten code**, a short list of **failure-path / behavior-relevant changes** (or "none, behavior identical"), any **audit-only flags** (hallucinated APIs, stale deps), and a brief **summary of what was changed and why**.

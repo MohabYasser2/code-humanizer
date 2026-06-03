@@ -22,6 +22,12 @@ auto-apply an edit that could change behavior or break. See
 [Human-signal injection](#human-signal-injection) below. Every comment the skill writes,
 in any mode, is **formal and human: no em-dashes, no emoji, no AI-writing tells.**
 
+The model does the editing itself: it reads each file in full and edits it directly, **never by
+generating a script** to find-and-replace (a script does shallow, mechanical substitution and
+misses the real rewrites). And it **processes everything**, including code that looks
+human-written, so nothing is skipped. The only limits are behavior (it never changes what the
+code does) and meaning (it rewrites a meaningful comment rather than deleting it).
+
 ## Installation
 
 The skill is just a folder of Markdown files. Drop it into your skills directory and it's live.
@@ -236,6 +242,12 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.3.0**: Made two execution rules explicit. The model **edits each file directly, by hand**
+  (Read/Edit/Write) and must **not** generate a script to transform the code; a script does
+  shallow mechanical substitution and misses the real semantic rewrites. And it **processes
+  everything, including code that looks human-written**: the old "lean toward leaving it alone"
+  guidance is replaced by "preserve meaning and behavior, but cover every file." The
+  DETECTION GUIDANCE section became WHAT TO PRESERVE, and a COVERAGE section was added.
 - **1.2.0**: Made **auto mode the default**: `/code-humanizer` now removes AI tells and then
   injects human signals in one pass, with a new `--clean-only` mode for removal without injection
   (the previous default). Added a **COMMENT VOICE** policy so every
