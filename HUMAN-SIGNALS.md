@@ -1,19 +1,20 @@
-# Human-Signal Injection (opt-in additive track)
+# Human-Signal Injection (auto mode's second phase, and additive mode)
 
 This is the **additive** half of Code Humanizer. The 22 patterns in `SKILL.md` *remove*
-AI tells (subtractive, on by default). This track *adds* the affirmative fingerprints of
+AI tells (the subtractive pass). This track *adds* the affirmative fingerprints of
 human authorship: formatting entropy, lived-in comments, idiosyncratic naming, evolution
 scars.
 
-**This track is OFF by default and never runs unless the user explicitly asks for it**
-(e.g. "inject human signals", "make it look hand-written", `--inject-signals`). The default
-`/code-humanizer` is subtractive only.
+**This track runs by default.** Auto mode (the default for `/code-humanizer`) removes AI tells
+first, then injects these signals. Additive mode (`--inject-signals`) injects without the
+subtractive pass, for code that is already clean. Only **clean-only** mode (`--clean-only`, or
+"just remove AI tells") skips this track.
 
 The research basis: *Whitespaces Don't Lie* (arXiv 2601.19264) found human code shows
-**15–40% higher variance in formatting metrics across identical implementations** —
+**15-40% higher variance in formatting metrics across identical implementations**,
 *"humans create intentional inconsistency; AI generates unintentional uniformity."*
 Whitespace and indentation were the single most discriminative cues. So the objective is
-**add variance, not add mess** — and variance that doesn't compile is worthless.
+**add variance, not add mess**, and variance that doesn't compile is worthless.
 
 ---
 
@@ -23,38 +24,38 @@ The subtractive behavior contract still holds: **the program must behave identic
 success path.** Injection makes that *harder*, not easier, so it is governed by a strict
 safety tier. Every signal below is tagged:
 
-- **SAFE** — provably behavior-neutral. Touches only comments, blank lines, and whitespace
+- **SAFE**: provably behavior-neutral. Touches only comments, blank lines, and whitespace
   in languages where whitespace is non-syntactic, or the inside of string literals that are
   not keys/paths/format-sensitive. **May be auto-applied.**
-- **CONDITIONAL** — behavior-neutral *only if* applied completely and in a compatible
+- **CONDITIONAL**: behavior-neutral *only if* applied completely and in a compatible
   language (e.g. a rename touching every reference, an idiom swap that is semantically equal
   for this type). **Apply only after verifying the precondition; otherwise treat as FLAG.**
-- **FLAG** — can change behavior or fail to compile (identifier typos, Python
+- **FLAG**: can change behavior or fail to compile (identifier typos, Python
   indentation/tab changes, `== True`/`== None` semantics, dropping a guard). **Never
   auto-apply. Emit these as a numbered suggestion list for the human to apply by hand.**
 
 > **The hard rule that keeps code working:** the skill auto-edits SAFE and *verified* CONDITIONAL only.
 > FLAG is reported, never written. If you cannot prove a CONDITIONAL edit is total and safe, demote it
-> to FLAG and flag it. When unsure, flag — don't guess.
+> to FLAG and flag it. When unsure, flag, don't guess.
 
 After injecting, **verify**: re-run the project's tests / type checker / linter if present,
 or at minimum confirm the file still parses (`python -c "import ast,sys; ast.parse(open(f).read())"`
 for Python, a compile for brace languages). Report the result. If it no longer parses, revert.
 
-### Verifying a CONDITIONAL rename — the complete-reference rule
+### Verifying a CONDITIONAL rename: the complete-reference rule
 
-Renames (H27–H31) are the most common CONDITIONAL edit and the easiest to get wrong: a rename is
+Renames (H27-H31) are the most common CONDITIONAL edit and the easiest to get wrong: a rename is
 behavior-neutral **only if every reference moves and nothing binds the old name by string or
 reflection.** A half-done rename is a `NameError`/compile error or, worse, a silent bug. Before
-applying any rename, run this checklist — if you can't complete it with confidence, **demote to
+applying any rename, run this checklist, if you can't complete it with confidence, **demote to
 FLAG and flag it, don't rename:**
 
-1. **Enumerate every reference — don't eyeball.** Grep the exact symbol across its scope: the
+1. **Enumerate every reference, don't eyeball.** Grep the exact symbol across its scope: the
    whole file for a local, the whole project for an exported/public symbol. Count them.
 2. **Rename all of them in one edit:** the definition, every use, keyword/named/default
    arguments, and the name inside doc comments (Python docstring params, C#/JS XML/JSDoc
    `<param name="...">` / `@param`).
-3. **Check for name-based binding that an identifier grep misses** — these don't move with a
+3. **Check for name-based binding that an identifier grep misses**. These don't move with a
    rename and silently break:
    - **String/dynamic access:** `obj["old"]`, `getattr`/`hasattr`, JS bracket access,
      reflection (`GetProperty("old")`, `nameof` was-string copies).
@@ -67,7 +68,7 @@ FLAG and flag it, don't rename:**
 4. **Compile/parse-check** with the language's tool (`tsc --noEmit`, `node --check`,
    `dotnet build`, `python -c ast.parse`). If anything fails, revert the rename.
 5. **Scope discipline:** only rename **locals and single-file private symbols** as CONDITIONAL. A
-   field, property, public method, or exported symbol is **FLAG — flag, never auto-rename** —
+   field, property, public method, or exported symbol is **FLAG, flag, never auto-rename**,
    because step 3's surface is too large to clear by inspection.
 
 The same rule covers any CONDITIONAL that depends on completeness (e.g. a file rename, H50): incomplete =
@@ -91,23 +92,23 @@ Whitespace safety is **language-dependent**. The same edit is free in C and fata
 
 **Rule:** in Python, *never* touch leading indentation or tabs (FLAG). All Python whitespace
 entropy must come from operator spacing, blank lines, trailing whitespace, comment spacing,
-and inline alignment — never the indent column. In brace languages, formatting is almost all
+and inline alignment, never the indent column. In brace languages, formatting is almost all
 SAFE because the compiler ignores it.
 
 > The headline example `int x=y ;` (space before semicolon, no spaces around `=`) is a
-> brace-language signal — SAFE in C/C++/Java/C#/JS/TS, not applicable in Python.
+> brace-language signal, SAFE in C/C++/Java/C#/JS/TS, not applicable in Python.
 
 **For JavaScript, TypeScript, and C#, read `LANGUAGES.md`** before applying any whitespace,
 type, equality, or idiom signal. It has the per-language tiers (TS type edits are compile-gated
 CONDITIONAL; JS `===`→`==` and `let`→`var` are FLAG; C# `var`↔explicit and `#region` are SAFE) and the
 **formatter caveat**: if Prettier / `dotnet format` / EditorConfig runs on save or in CI,
-whitespace injection is normalized away — lean on comments, naming, and idioms instead.
+whitespace injection is normalized away, lean on comments, naming, and idioms instead.
 
 ---
 
 ## THE CATALOG (H-track)
 
-Grouped for reference. Apply a *subset*, at *uneven* density — see the density rule below.
+Grouped for reference. Apply a *subset*, at *uneven* density, see the density rule below.
 
 ### Whitespace & formatting entropy
 
@@ -125,7 +126,7 @@ Grouped for reference. Apply a *subset*, at *uneven* density — see the density
 | H10 | Mixed brace/keyword spacing | `if(x)` and `if (x)` in one file | SAFE brace |
 | H11 | No-space-after-`#`/`//` | `#like this` mixed with `# like this` | SAFE |
 
-### Comments — the human kind (AI strips these; their presence is the strongest tell)
+### Comments: the human kind (AI strips these; their presence is the strongest tell)
 
 | ID | Signal | Example | Tier |
 |----|--------|---------|------|
@@ -133,8 +134,8 @@ Grouped for reference. Apply a *subset*, at *uneven* density — see the density
 | H13 | Debug prints | `print("here")` `print("aaaa")` · commented `# breakpoint()` | SAFE commented · CONDITIONAL live (adds a side effect) |
 | H14 | TODO/FIXME/HACK/XXX with real context | `# FIXME: breaks on empty input, ask Omar` | SAFE |
 | H15 | Stale comment that contradicts the code | comment says "0=stay" but `0` means up | SAFE |
-| H16 | Venting / emotional | `# this is dumb but it works` · `# don't touch` | SAFE |
-| H17 | Dated / signed scribbles | `# 12/03 hack — revisit` · `# -MY` | SAFE |
+| H16 | Rationale / decision note (formal default; informal venting only on calibration) | `# kept the explicit loop; comprehension profiled slower` | SAFE |
+| H17 | Dated / signed scribbles | `# 12/03 hack, revisit` · `# -MY` | SAFE |
 | H18 | Native-language comment | a non-English line mid-file | SAFE |
 | H19 | Pragmatic suppressions | `# noqa` `# type: ignore` `# pylint: disable=...` | CONDITIONAL (must be a real, valid pragma) |
 | H20 | External references | `# from stackoverflow.com/q/...` · ticket #, a name | SAFE |
@@ -144,11 +145,16 @@ Grouped for reference. Apply a *subset*, at *uneven* density — see the density
 
 | ID | Signal | Example | Tier |
 |----|--------|---------|------|
-| H22 | Typos in **comments / log strings** | `recieve`, `seperate`, `occured`, `lenght` | SAFE |
+| H22 | Typos in **comments / log strings** (informal register) | `recieve`, `seperate`, `occured` | SAFE, but skip in formal-voice output |
 | H23 | Typos in **identifiers** | `recieved_data`, `widht` used everywhere | **FLAG** (one missed ref = `NameError`) |
 | H24 | British/American mix | `colour`/`color` in comments | SAFE comment · FLAG identifier |
 | H25 | Non-native / loose grammar in comments | "this make the thing for calc" | SAFE |
 | H26 | Inconsistent message capitalization | `"Error:"` vs `"error :"` | SAFE (watch exact-match consumers) |
+
+> **The default injected comment voice is formal.** H16 (venting), H22 (comment typos), and H25
+> (loose grammar) are *informal-register* signals; inject them only when the target codebase
+> already reads that way. Otherwise follow **COMMENT VOICE** in `SKILL.md`: formal, human, no
+> em-dashes, no emoji. Auto mode uses the same voice.
 
 ### Naming chaos
 
@@ -187,7 +193,7 @@ Grouped for reference. Apply a *subset*, at *uneven* density — see the density
 
 | ID | Signal | Example | Tier |
 |----|--------|---------|------|
-| H45 | `== True` / `== None` | `if active == True:` `if x == None:` | **FLAG** — semantics differ for numpy/None |
+| H45 | `== True` / `== None` | `if active == True:` `if x == None:` | **FLAG**: semantics differ for numpy/None |
 | H46 | `range(len(x))` instead of `enumerate` | | SAFE |
 | H47 | `len(x) == 0` instead of `not x` | | CONDITIONAL (differs for numpy/pandas) |
 | H48 | Redundant parens | `return (x)` `if (a and b):` | SAFE |
@@ -206,37 +212,37 @@ Grouped for reference. Apply a *subset*, at *uneven* density — see the density
 A *uniform* layer of injected noise is just a new, detectable uniformity. Per the research,
 human inconsistency is **inconsistently** distributed. So:
 
-1. **Apply a random subset, not all of it.** Pick ~5–10 signal *types* for a file, not 50.
+1. **Apply a random subset, not all of it.** Pick ~5-10 signal *types* for a file, not 50.
 2. **Vary density by region.** Leave one function almost clean; rough up another. Real code
    has a careful core and a rushed edge (evolution scars, H35/H39).
 3. **Don't make every line messy.** Operator-spacing entropy means *some* `=` have spaces and
-   *some* don't — not that none do.
+   *some* don't, not that none do.
 4. **Match plausibility.** A misspelling a real dev makes (`recieve`) beats a random one
    (`receeeive`). Venting comments fit hard code, not a one-line helper.
 5. **Never inject the same transform on a fixed interval.** That interval *is* a signature.
 
 Over-injection is a tell and risks breakage. Under-injection on top of a good subtractive
-pass is usually enough — the subtractive pass already removes ~80% of the AI signal.
+pass is usually enough, the subtractive pass already removes ~80% of the AI signal.
 
 ---
 
 ## PROCESS
 
-1. **Confirm opt-in.** Only run this track if the user asked for injection.
+1. **Confirm the mode.** This track runs in auto mode (the default) and additive mode; skip it only in clean-only mode.
 2. **Branch on language.** Build the safe set from the LANGUAGE BRANCH table. In Python, drop
    all indentation/tab signals to FLAG.
-3. **(Recommended) Run the subtractive pass first.** Remove AI tells (SKILL.md 1–22), *then*
+3. **(Recommended) Run the subtractive pass first.** Remove AI tells (SKILL.md 1-22), *then*
    inject. Subtract-then-inject is more robust and safer than leading with typos.
 4. **Pick an uneven subset** per the density rule.
 5. **Apply SAFE and verified CONDITIONAL edits only.** Collect every FLAG as a suggestion list.
 6. **Verify** it still parses / tests still pass. Revert anything that breaks.
 7. **Deliver:** the rewritten code, the list of signals injected (with IDs), the **FLAG-tier
    suggestions the human must apply manually**, the verification result, and a one-line note
-   that injection is opt-in style work, not a behavior change.
+   that injection is style work, not a behavior change.
 
 ---
 
-## WORKED EXAMPLE — brace language (lots of SAFE room)
+## WORKED EXAMPLE: brace language (lots of SAFE room)
 
 **Before (AI-clean JavaScript):**
 ```javascript
@@ -251,14 +257,14 @@ function sumPositives(numbers) {
 }
 ```
 
-**After (signals injected — H1, H2, H4, H10, H12, H14, H37):**
+**After (signals injected, H1, H2, H4, H10, H12, H14, H37):**
 ```javascript
 function sumPositives(nums){
   let total=0;
-  // let total = 0.0;  // had a float bug here before
+  // let total = 0.0;   // kept as int; the float version had a rounding bug
 
   for (const n of nums) {
-    if(n > 0) total = total + n ;   // FIXME do we count 0? prob not
+    if(n > 0) total = total + n ;   // FIXME: confirm whether zero should count
   }
   return total;
 }
@@ -266,9 +272,9 @@ function sumPositives(nums){
 Behavior identical (sums positives). All edits are SAFE/CONDITIONAL: brace-spacing (H10), operator
 spacing (H1), space-before-`;` (H2), a commented-out old line (H12), a real-context FIXME
 (H14), `total = total + n` (H37), a renamed param `numbers→nums` applied to *both* references
-(a CONDITIONAL rename with every reference checked — H30). **FLAG (not applied):** none needed here.
+(a CONDITIONAL rename with every reference checked, H30). **FLAG (not applied):** none needed here.
 
-## WORKED EXAMPLE — Python (indentation is FLAG, so lean on comments/idioms)
+## WORKED EXAMPLE: Python (indentation is FLAG, so lean on comments/idioms)
 
 **Before (AI-clean Python):**
 ```python
@@ -276,29 +282,29 @@ def active_users(users):
     return [u for u in users if u.get("is_active")]
 ```
 
-**After (signals injected — H1, H11, H12, H16, H22, H46):**
+**After (signals injected, H1, H11, H12, H46):**
 ```python
 def active_users(users):
     out = []
-    #loop and grab the active ones (comprehension was slower somehow??)
+    #explicit loop here; the comprehension profiled slower on large inputs
     for i in range(len(users)):
         u = users[i]
-        if u.get("is_active"):   # recieve only the live accounts
+        if u.get("is_active"):   # only the active accounts
             out.append(u)
     # return [u for u in users if u["is_active"]]
     return out
 ```
-Behavior identical. Edits: `range(len(...))` expansion (H46, SAFE), no-space `#` comment (H11),
-a venting/uncertain aside (H16), a typo in a comment `recieve` (H22, SAFE), operator/format
-entropy (H1), a commented-out old one-liner (H12). **Indentation left untouched** (FLAG in
-Python). **FLAG (emitted, NOT applied):** "change `u.get(\"is_active\")` to
-`u[\"is_active\"] == True` (H45) — skipped: changes behavior on missing key + truthiness."
+Behavior identical. Edits: `range(len(...))` expansion (H46, SAFE), a no-space `#` comment (H11),
+a formal rationale note on the loop choice, operator/format entropy (H1), and a commented-out
+old one-liner (H12). The comments stay formal per COMMENT VOICE. **Indentation left untouched**
+(FLAG in Python). **FLAG (emitted, NOT applied):** "change `u.get(\"is_active\")` to
+`u[\"is_active\"] == True` (H45), skipped: changes behavior on missing key + truthiness."
 
 ---
 
 ## Honest use
 
-Where authorship disclosure is required — academic submissions, assessments, hiring tests —
+Where authorship disclosure is required, academic submissions, assessments, hiring tests,
 making AI code read as hand-written can cross into misrepresenting authorship. This track is a
 style/forensics tool (and a way to study what detectors key on); disclosing AI assistance
 where it's required remains the user's responsibility. Keep this note in any output that uses

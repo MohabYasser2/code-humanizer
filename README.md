@@ -1,27 +1,32 @@
 # Code Humanizer
 
-A skill for Claude Code and OpenCode that removes the signs of AI-generated **code**, making source read as natural, idiomatic, human-written code — without changing what it does. It is the code-focused companion to the prose [`humanizer`](../humanizer) skill.
+A skill for Claude Code and OpenCode that removes the signs of AI-generated **code**, making source read as natural, idiomatic, human-written code, without changing what it does. It is the code-focused companion to the prose [`humanizer`](../humanizer) skill.
 
 ## What it does
 
 AI-generated code is rarely wrong in syntax. It is *eerily uniform and over-finished*: a docstring on every function, a comment on every line, a blanket `try/except` around everything, names spelled out as full sentences, and a class where a function would do. This skill strips that "slop" and naturalizes the style to match a real codebase, under one hard rule: **the program must still behave identically.**
 
-Most of these edits also make the code genuinely better — less noise, less over-abstraction, fewer error-swallowing wrappers.
+Most of these edits also make the code genuinely better: less noise, less over-abstraction, fewer error-swallowing wrappers.
 
-It has **two modes**:
+It has **three modes**:
 
-- **Subtractive (default):** the 22 patterns below — remove AI tells, behavior-preserving.
-- **Additive (opt-in):** a separate `HUMAN-SIGNALS.md` track that *injects* the affirmative
-  fingerprints of hand-written code (formatting entropy, commented-out trial code, lived-in
-  `FIXME`s, typos in comments, idiosyncratic naming). Off by default; runs only when you ask.
-  It is governed by a SAFE/CONDITIONAL/FLAG safety tier so it never auto-applies an edit that could change
-  behavior or break — see [Human-signal injection](#human-signal-injection-opt-in) below.
+- **Auto (default):** clean and humanize in one pass. It runs the subtractive pass, then injects
+  human signals from `HUMAN-SIGNALS.md`. This is what `/code-humanizer` does by default, and the
+  recommended mode for natural-looking output.
+- **Clean-only (`--clean-only`):** the 22 patterns below and nothing else. Remove AI tells,
+  strictly behavior-preserving, no injection.
+- **Additive (`--inject-signals`):** inject human signals only, for code that is already clean.
+
+The auto and additive tracks are governed by a SAFE/CONDITIONAL/FLAG safety tier, so they never
+auto-apply an edit that could change behavior or break. See
+[Human-signal injection](#human-signal-injection) below. Every comment the skill writes,
+in any mode, is **formal and human: no em-dashes, no emoji, no AI-writing tells.**
 
 ## Installation
 
 The skill is just a folder of Markdown files. Drop it into your skills directory and it's live.
 
-### Option A — clone (recommended)
+### Option A: clone (recommended)
 
 **macOS / Linux:**
 ```bash
@@ -33,7 +38,7 @@ git clone https://github.com/MohabYasser2/code-humanizer.git ~/.claude/skills/co
 git clone https://github.com/MohabYasser2/code-humanizer.git "$env:USERPROFILE\.claude\skills\code-humanizer"
 ```
 
-### Option B — download ZIP
+### Option B: download ZIP
 
 On the GitHub page, click **Code ▸ Download ZIP**, then extract so that `SKILL.md` lands at:
 - macOS / Linux: `~/.claude/skills/code-humanizer/SKILL.md`
@@ -72,16 +77,16 @@ Now humanize:
 [paste AI code]
 ```
 
-Or, in a repo: *"Humanize `foo.py` to match the conventions in `bar.py`."* The skill reads naming, comment density, type-hint usage, quote style, and idioms, then rewrites to fit — instead of producing generic "clean" output.
+Or, in a repo: *"Humanize `foo.py` to match the conventions in `bar.py`."* The skill reads naming, comment density, type-hint usage, quote style, and idioms, then rewrites to fit, instead of producing generic "clean" output.
 
 ## The behavior contract
 
 This is what makes a *code* humanizer different from a prose one:
 
-- **Success-path behavior is identical** — same inputs, outputs, return types, side effects, ordering, and public API.
+- **Success-path behavior is identical**: same inputs, outputs, return types, side effects, ordering, and public API.
 - **No bugs, no vulnerabilities, no behavior drift** introduced to "look human."
-- **Failure-path changes are surfaced, not silent** — e.g., removing a swallow-all `except` makes the code raise instead of returning `None`; that is flagged as an explicit decision.
-- **Verified when possible** — tests / type checker / linter are run after the rewrite if the project has them.
+- **Failure-path changes are surfaced, not silent**: e.g., removing a swallow-all `except` makes the code raise instead of returning `None`; that is flagged as an explicit decision.
+- **Verified when possible**: tests / type checker / linter are run after the rewrite if the project has them.
 
 ## 22 Patterns Detected (with Before/After)
 
@@ -137,47 +142,47 @@ This is what makes a *code* humanizer different from a prose one:
 |---|---------|-----|
 | 22 | Hallucinated APIs / deprecated libraries | Flag for the user; never fabricate a fix |
 
-## Human-signal injection (opt-in)
+## Human-signal injection
 
-The patterns above *remove* AI tells. The opt-in **additive** track in
-[`HUMAN-SIGNALS.md`](HUMAN-SIGNALS.md) does the reverse — it *injects* the affirmative
-fingerprints of hand-written code. Trigger it explicitly: *"inject human signals"*,
-*"make this look hand-written"*, or `--inject-signals`. It stays off otherwise.
+The patterns above *remove* AI tells. The **additive** track in
+[`HUMAN-SIGNALS.md`](HUMAN-SIGNALS.md) does the reverse. It *injects* the affirmative
+fingerprints of hand-written code. It runs by default as the second phase of auto mode, and on
+its own in additive mode (`--inject-signals`). Only `--clean-only` skips it.
 
 The research basis ([*Whitespaces Don't Lie*](https://arxiv.org/pdf/2601.19264)): human code
-shows **15–40% higher formatting variance** than AI on identical logic — *"humans create
+shows **15-40% higher formatting variance** than AI on identical logic, *"humans create
 intentional inconsistency; AI generates unintentional uniformity."* So the goal is to add
-**variance, not mess** — and variance that doesn't compile is useless.
+**variance, not mess**, and variance that doesn't compile is useless.
 
 Every signal carries a safety tier:
 
-- **SAFE** — behavior-neutral (comments, blank lines, whitespace in brace languages, typos
+- **SAFE**: behavior-neutral (comments, blank lines, whitespace in brace languages, typos
   inside log strings). Auto-applied.
-- **CONDITIONAL** — safe only if applied completely / in a compatible language (a total
+- **CONDITIONAL**: safe only if applied completely / in a compatible language (a total
   rename, an equivalent idiom swap). Applied only after verifying.
-- **FLAG** — can change behavior or fail to compile (identifier typos, Python
+- **FLAG**: can change behavior or fail to compile (identifier typos, Python
   indentation/tabs, `== True`/`== None`). **Reported, never auto-applied.**
 
 The H-track has 50 signals across seven groups:
 
 | Group | Examples | Notes |
 |-------|----------|-------|
-| Whitespace entropy (H1–H11) | `x=y` vs `x = y`, `int x = y ;`, irregular blank lines, mixed quotes | SAFE in C/Java/JS; indentation/tabs are FLAG in **Python** |
-| Lived-in comments (H12–H21) | commented-out code, `# FIXME ask Omar`, venting, stale comments | the strongest human tell — AI strips these |
-| Typos & grammar (H22–H26) | `recieve`/`occured` in comments, loose grammar | SAFE in comments; FLAG in identifiers |
-| Naming chaos (H27–H31) | `tmp`/`tmp2`, `df_copy`, camel+snake mix | CONDITIONAL — rename every reference |
-| Structural scars (H32–H40) | copy-paste duplication, magic numbers, `i = i + 1` | uneven polish, careful core + rushed edge |
-| Import habits (H41–H44) | mid-file imports, unused leftovers, commented-out imports | SAFE |
-| Legacy idioms (H45–H49) | `range(len(x))`, redundant parens, `== True` | `== True`/`== None` are FLAG |
+| Whitespace entropy (H1-H11) | `x=y` vs `x = y`, `int x = y ;`, irregular blank lines, mixed quotes | SAFE in C/Java/JS; indentation/tabs are FLAG in **Python** |
+| Lived-in comments (H12-H21) | commented-out code, `# FIXME ask Omar`, venting, stale comments | the strongest human tell, AI strips these |
+| Typos & grammar (H22-H26) | `recieve`/`occured` in comments, loose grammar | SAFE in comments; FLAG in identifiers |
+| Naming chaos (H27-H31) | `tmp`/`tmp2`, `df_copy`, camel+snake mix | CONDITIONAL, rename every reference |
+| Structural scars (H32-H40) | copy-paste duplication, magic numbers, `i = i + 1` | uneven polish, careful core + rushed edge |
+| Import habits (H41-H44) | mid-file imports, unused leftovers, commented-out imports | SAFE |
+| Legacy idioms (H45-H49) | `range(len(x))`, redundant parens, `== True` | `== True`/`== None` are FLAG |
 
-Plus the **density rule**: apply an *uneven* subset (5–10 signal types per file), not a
-uniform layer — a uniform layer of noise is just a different detectable uniformity. And a hard
+Plus the **density rule**: apply an *uneven* subset (5-10 signal types per file), not a
+uniform layer, a uniform layer of noise is just a different detectable uniformity. And a hard
 **language branch**: in Python, never touch leading indentation or tabs (syntactic → FLAG); all
 Python entropy comes from operator spacing, blank lines, comments, and idioms.
 
 For **JavaScript, TypeScript, and C#**, [`LANGUAGES.md`](LANGUAGES.md) carries the per-language
-tiers and traps — TS type edits are compile-gated CONDITIONAL; JS `===`→`==` and `let`→`var` are FLAG; C#
-`var`↔explicit, `#region`, and LINQ↔method syntax are SAFE — plus a **formatter caveat**: if
+tiers and traps, TS type edits are compile-gated CONDITIONAL; JS `===`→`==` and `let`→`var` are FLAG; C#
+`var`↔explicit, `#region`, and LINQ↔method syntax are SAFE, plus a **formatter caveat**: if
 Prettier / `dotnet format` / EditorConfig runs on save or in CI, injected whitespace is
 normalized away, so lean on comments, naming, and idioms instead. Renames are hardened by a
 **complete-reference checklist** (locals are CONDITIONAL; fields/properties/public symbols are FLAG because
@@ -211,19 +216,19 @@ def active_users(users):
     return [u for u in users if u.get("is_active")]
 ```
 
-*Behavior note:* the swallow-all `except` was removed, so malformed input now raises instead of returning `None` (intentional — surfaces real errors). Success-path output is unchanged.
+*Behavior note:* the swallow-all `except` was removed, so malformed input now raises instead of returning `None` (intentional, surfaces real errors). Success-path output is unchanged.
 
 ## Scope
 
-The **default subtractive mode** does behavior-preserving naturalization (remove AI tells +
-match idiomatic human/repo style). The **opt-in additive mode** injects human signals, but is
-bounded by the same hard line: it auto-applies only edits proven behavior-neutral (SAFE) or
-verified-complete (CONDITIONAL), and **flags — never auto-writes — anything that could change behavior
+The **default auto mode** removes AI tells and then injects human signals; **clean-only mode**
+(`--clean-only`) does the removal only. Both are bounded by the same hard line: the skill
+auto-applies only edits proven behavior-neutral (SAFE) or
+verified-complete (CONDITIONAL), and **flags, never auto-writes, anything that could change behavior
 or fail to compile** (FLAG: identifier typos, Python indentation/tab changes, `== True`/`== None`).
 Neither mode injects deliberate bugs, vulnerabilities, or stale dependencies, and neither
 silently rewrites code it can't verify. Examples are **Python**-primary; the additive track has
 first-class, per-language coverage for **JavaScript, TypeScript, and C#** (see
-[`LANGUAGES.md`](LANGUAGES.md)), plus the wider C-family, because it branches on language —
+[`LANGUAGES.md`](LANGUAGES.md)), plus the wider C-family, because it branches on language:
 whitespace that is free in C# is fatal in Python, and type edits that are safe in JS break a
 strict TypeScript build.
 
@@ -231,8 +236,16 @@ strict TypeScript build.
 
 ## Version History
 
-- **1.1.0** — Added the opt-in **additive** track (`HUMAN-SIGNALS.md`): 50 human-signal
-  patterns (H1–H50) across whitespace entropy, lived-in comments, typos, naming chaos,
+- **1.2.0**: Made **auto mode the default**: `/code-humanizer` now removes AI tells and then
+  injects human signals in one pass, with a new `--clean-only` mode for removal without injection
+  (the previous default). Added a **COMMENT VOICE** policy so every
+  comment the skill writes or keeps is formal and human, with no em-dashes, no emoji, and no
+  AI-writing tells; reclassified the informal signals (H16 venting, H22 comment typos, H25 loose
+  grammar) as calibration-only. Removed all em-dashes and decorative emoji from the skill's own
+  prose and notation (the tier tags are plain text: SAFE / CONDITIONAL / FLAG), so the skill
+  follows the same rules it enforces.
+- **1.1.0**: Added the opt-in **additive** track (`HUMAN-SIGNALS.md`): 50 human-signal
+  patterns (H1-H50) across whitespace entropy, lived-in comments, typos, naming chaos,
   structural scars, import habits, and legacy idioms. Introduced the SAFE/CONDITIONAL/FLAG safety tier
   (auto-apply only behavior-neutral edits; flag-only for anything that could break), a
   per-language whitespace matrix (Python indentation/tabs are flag-only), the density rule
@@ -240,11 +253,11 @@ strict TypeScript build.
   first-class per-language coverage for **JavaScript, TypeScript, and C#** (plus the wider
   C-family and a formatter caveat), and hardened the CONDITIONAL rename rule with a
   **complete-reference checklist** (locals CONDITIONAL; fields/properties/public symbols FLAG). Resolved
-  the Pattern 14 contradiction (the "no fake mess" rule now scopes to the default subtractive
-  mode). Grounded in published code-stylometry forensics (*Whitespaces Don't Lie*,
+  the Pattern 14 contradiction (the "no fake mess" rule now scopes to the subtractive
+  pass). Grounded in published code-stylometry forensics (*Whitespaces Don't Lie*,
   arXiv 2601.19264). Behavior-preservation validated on a sample (subtractive + injection,
   parse + behavior-identical).
-- **1.0.0** — Initial release. 22 patterns across comments/docs, naming, structure, error handling, types/formatting/idioms, and audit-only. Behavior contract, style calibration, detection guidance, and a full worked example. Python-focused.
+- **1.0.0**: Initial release. 22 patterns across comments/docs, naming, structure, error handling, types/formatting/idioms, and audit-only. Behavior contract, style calibration, detection guidance, and a full worked example. Python-focused.
 
 ## License
 

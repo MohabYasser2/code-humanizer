@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.1.0
+version: 1.2.0
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -9,11 +9,12 @@ description: |
   tutorial-voice comments, emoji and print() narration, verbose dictionary-style names,
   generic placeholder names, over-engineering and premature abstraction, blanket
   try/except that swallows errors, useless type hints, status-envelope returns, eerie
-  uniformity, dead imports, and appended demo blocks. Strictly behavior-preserving by
-  default. Also ships an optional, opt-in "human-signal injection" track (see
-  HUMAN-SIGNALS.md) that adds the affirmative fingerprints of hand-written code —
-  formatting entropy, commented-out code, lived-in comments, idiosyncratic naming — under a
-  strict safety tier that never auto-applies an edit that could change behavior or break.
+  uniformity, dead imports, and appended demo blocks. By default it runs in auto mode: it
+  removes those AI tells and then injects the affirmative fingerprints of hand-written code
+  (formatting entropy, commented-out code, lived-in comments, idiosyncratic naming) under a
+  strict safety tier that never auto-applies an edit that could change behavior or break. A
+  clean-only mode does the removal without injection. Every comment the skill writes is formal
+  and human, with no em-dashes and no emoji.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -38,21 +39,29 @@ So the job is not "make the code worse." It is: **strip the AI slop, then let th
 
 ## Your Task
 
-**Two modes — default to the first.**
-- **Subtractive (default, always available):** remove the AI tells below. Strictly
-  behavior-preserving. This is what `/code-humanizer` does unless told otherwise.
-- **Additive (opt-in only):** *inject* affirmative human signals (formatting entropy,
-  commented-out code, typos in comments, idiosyncratic naming). Runs **only when the user
-  explicitly asks** ("inject human signals", "make it look hand-written", `--inject-signals`).
-  When asked, read **`HUMAN-SIGNALS.md`** and follow its safety-tiered process. Best results
-  come from running the subtractive pass first, then injecting.
+**Three modes. The default is auto (clean and humanize); use clean-only for removal without injection.**
+- **Auto (default): clean and humanize in one pass.** Remove the AI tells listed below *and*
+  inject human signals, so the result reads as genuinely hand-written. This is what
+  `/code-humanizer` does unless told otherwise. Process: run the full subtractive pass first,
+  then inject signals from `HUMAN-SIGNALS.md`, both governed by the same behavior contract and
+  safety tier.
+- **Clean-only (`--clean-only`, or "just remove AI tells", "don't add anything"):** run only the
+  subtractive pass below, with no injection. Strictly behavior-preserving. Use it when the user
+  wants cleanup without any added human signals.
+- **Additive (`--inject-signals`):** inject human signals *without* the subtractive pass, for
+  code that is already clean.
 
-When given code to humanize (subtractive mode):
+For **auto** and **additive**, read `HUMAN-SIGNALS.md` (the H-track and its safety tier); also
+read `LANGUAGES.md` when the code is JavaScript, TypeScript, or C#. Every comment the skill
+writes or rewrites, in any mode, follows **COMMENT VOICE** below.
 
-1. **Identify AI patterns** — scan for the patterns listed below.
-2. **Rewrite, preserve behavior** — change style and structure, never logic. See THE BEHAVIOR CONTRACT.
-3. **Match the surrounding style** — fit the file's or repo's existing conventions (see Style Calibration). When none is given, default to plain, idiomatic Python.
-4. **Don't over-correct** — clean code is not proof of AI. See DETECTION GUIDANCE before gutting anything.
+The subtractive pass works as follows. It is the first phase of auto mode (the default) and the
+whole of clean-only mode:
+
+1. **Identify AI patterns**: scan for the patterns listed below.
+2. **Rewrite, preserve behavior**: change style and structure, never logic. See THE BEHAVIOR CONTRACT.
+3. **Match the surrounding style**: fit the file's or repo's existing conventions (see Style Calibration). When none is given, default to plain, idiomatic Python.
+4. **Don't over-correct**: clean code is not proof of AI. See DETECTION GUIDANCE before gutting anything.
 
 The draft → behavior-check → audit → final loop and the deliverable are defined under Process and Output, below.
 
@@ -68,6 +77,27 @@ Code is not prose. You cannot freely reword it. Every rewrite must satisfy these
 - **When unsure whether an edit changes behavior, keep the behavior and flag the smell** instead of guessing.
 
 
+## COMMENT VOICE (whenever the skill writes or rewrites a comment)
+
+Any comment the skill produces, whether it survives a subtractive rewrite or is injected in auto
+or additive mode, must read like a formal note from a real maintainer. Not AI prose, and not
+casual chat.
+
+- **Explain why, not what.** A comment earns its place by recording a reason, a constraint, a
+  decision, or a gotcha. Never restate the code.
+- **Formal register.** Write complete, professional phrasing. No slang ("lol", "count em up"),
+  no venting, no filler. `TODO`, `FIXME`, and `NOTE` are fine when they carry real, specific
+  context (a condition, a ticket, a name).
+- **No em-dashes.** Use a period, comma, semicolon, colon, or parentheses instead.
+- **No emoji**, in comments or in any string the skill writes.
+- **No AI-writing tells.** No "Note that...", no tutorial voice ("Here we..."), no rule-of-three
+  phrasing, no inflated adjectives, no "not just X, but Y".
+- **Keep it short.** One line where the point fits on one line.
+- **Calibration wins.** If the surrounding file has its own comment habits, match them. The
+  informal signals in `HUMAN-SIGNALS.md` (venting, comment typos, lowercase shorthand) are used
+  only when the target codebase already reads that way; the default voice is formal.
+
+
 ## Style Calibration (recommended)
 
 The strongest, most legitimate lever is matching an existing human style. Before rewriting:
@@ -78,7 +108,7 @@ The strongest, most legitimate lever is matching an existing human style. Before
    - Type-hint usage (fully typed? untyped? typed only at public boundaries?)
    - Quote style, indentation width, blank-line habits, import grouping
    - Idioms they reach for (comprehensions, `pathlib`, f-strings, dataclasses, guard clauses)
-2. **Match it.** Don't just delete AI patterns — replace them with patterns from the sample. If the repo is fully typed, keep types. If it never writes docstrings, don't add them. If it uses `cfg` and `idx`, don't expand them to `configuration` and `index`.
+2. **Match it.** Don't just delete AI patterns, replace them with patterns from the sample. If the repo is fully typed, keep types. If it never writes docstrings, don't add them. If it uses `cfg` and `idx`, don't expand them to `configuration` and `index`.
 3. **No sample, no repo context?** Default to plain, idiomatic, lightly-commented Python.
 
 How to provide a sample:
@@ -374,14 +404,14 @@ def get_user(uid):
     return db.find(uid)  # None if not found
 ```
 
-(Keep the envelope if it is the established API contract — match the codebase.)
+(Keep the envelope if it is the established API contract, match the codebase.)
 
 
 ### 14. Eerie uniformity
 
 **Problem:** Perfectly even formatting, identical structure across files, no variation, no maintenance scars. The absence of human "drift" is itself a tell.
 
-**Fix:** Allow natural, *valid* variation that fits the code — a guard clause here, an inline expression there, a terse name in a tight loop. **In the default subtractive mode, do not manufacture fake mess** — no random misindentation, no deliberate typos, no inconsistency for its own sake; that naturalness should emerge as a *side effect* of applying patterns 1–21 well, not by adding noise. Deliberate human-signal *injection* (formatting entropy, commented-out code, typos in comments, idiosyncratic naming) is a separate, **opt-in** capability with its own safety contract — see `HUMAN-SIGNALS.md`. It is off by default and never runs unless the user explicitly asks for it.
+**Fix:** Allow natural, *valid* variation that fits the code, a guard clause here, an inline expression there, a terse name in a tight loop. **During the subtractive pass, do not manufacture fake mess**: no random misindentation, no deliberate typos, no inconsistency for its own sake; that naturalness should emerge as a *side effect* of applying patterns 1-21 well, not by adding noise. Adding human signals deliberately (formatting entropy, commented-out code, idiosyncratic naming) is the separate injection phase, run by auto mode (the default) and additive mode under the safety contract in `HUMAN-SIGNALS.md`. In clean-only mode, injection does not run at all.
 
 
 ## ERROR HANDLING PATTERNS
@@ -438,15 +468,15 @@ Keep guards that handle real, reachable inputs; drop the ceremonial ones. If uns
 
 **Problem:** Annotations on every local and every trivial helper, sometimes `Any`-heavy, in a codebase that isn't otherwise typed.
 
-**Guidance — match the codebase:**
+**Guidance, match the codebase:**
 - Fully typed project → **keep and respect the types.**
 - Untyped project → trim trivial/`Any` annotations that add noise; keep them at public boundaries if useful.
-Never strip types just to look human in a typed repo — that breaks the codebase's contract.
+Never strip types just to look human in a typed repo, that breaks the codebase's contract.
 
 
 ### 18. Appended demo / "Example usage" block
 
-**Problem:** A library-style snippet ends with `if __name__ == "__main__":` running a hardcoded sample — pasted in by AI to "show it works."
+**Problem:** A library-style snippet ends with `if __name__ == "__main__":` running a hardcoded sample, pasted in by AI to "show it works."
 
 **Before:**
 ```python
@@ -523,26 +553,27 @@ Only apply idioms the surrounding code actually uses; don't out-clever a deliber
 **Fix:** **Do not fabricate a replacement and move on.** Flag any call you can't verify exists, and any library that looks deprecated, as a finding for the user. Verify against installed packages / docs when possible. Humanizing must never paper over a correctness bug.
 
 
-## OPTIONAL: HUMAN-SIGNAL INJECTION (opt-in, separate track)
+## HUMAN-SIGNAL INJECTION (auto mode's second phase; also additive mode)
 
-Everything above is **subtractive** — it removes AI tells without adding anything. The skill
-also has an **additive** track that *injects* the affirmative fingerprints of hand-written
-code: formatting entropy, commented-out trial code, lived-in `FIXME`s, typos in comments,
-idiosyncratic naming, evolution scars.
+Everything above is the **subtractive pass**. It removes AI tells without adding anything. This
+**injection pass** *adds* the affirmative fingerprints of hand-written code: formatting entropy,
+commented-out trial code, lived-in `FIXME`s, idiosyncratic naming, evolution scars. Auto mode
+(the default) runs the subtractive pass and then this injection pass in one go.
 
-- **It is off by default.** Run it **only when the user explicitly asks** ("inject human
-  signals", "make it look hand-written", `--inject-signals`).
+- **It runs by default.** Auto mode (the default) runs the subtractive pass and then this
+  injection pass. Additive mode (`--inject-signals`) runs injection alone, for already-clean
+  code. Only **clean-only** mode (`--clean-only`) skips it.
 - **When asked, read `HUMAN-SIGNALS.md`** and follow it. That file holds the H-track catalog
-  (H1–H50), a SAFE/CONDITIONAL/FLAG safety tier, a per-language whitespace matrix, the density rule, and the
+  (H1-H50), a SAFE/CONDITIONAL/FLAG safety tier, a per-language whitespace matrix, the density rule, and the
   injection process.
-- **For JavaScript, TypeScript, or C# code, also read `LANGUAGES.md`** — per-language tiers
+- **For JavaScript, TypeScript, or C# code, also read `LANGUAGES.md`**: per-language tiers
   (TS type edits are compile-gated; JS `===`/`var` swaps and C# field renames are flag-only)
   and the formatter caveat (Prettier / `dotnet format` normalize injected whitespace away).
 - **The hard safety rule:** auto-apply only SAFE (provably behavior-neutral) and *verified* CONDITIONAL
   edits. FLAG edits (identifier typos, Python indentation/tab changes, `== True`/`== None`
   semantics) are **flagged for the human, never written by the skill.** This is what keeps
   injected code working.
-- **Order:** run the subtractive pass first, then inject — it is more robust and safer than
+- **Order:** run the subtractive pass first, then inject. It is more robust and safer than
   leading with noise. Verify the result still parses / passes tests, and revert anything that
   breaks.
 
@@ -555,9 +586,9 @@ Clean code is not a confession. Before rewriting, make sure you are not gutting 
 
 - **Polished code from a senior developer** looks a lot like AI output. Formatting and consistency alone prove nothing.
 - **A typed codebase** should stay typed. Don't strip annotations to look casual.
-- **Genuinely useful docstrings** on public APIs and complex functions are good practice — keep them.
+- **Genuinely useful docstrings** on public APIs and complex functions are good practice, keep them.
 - **Comments that explain *why*** (a workaround, a constraint, a ticket reference) are the most human thing in a file. Never delete them.
-- **A real `__main__`, real logging, real error handling** for reachable failures — all legitimate. Don't remove them as "AI tells."
+- **A real `__main__`, real logging, real error handling** for reachable failures, all legitimate. Don't remove them as "AI tells."
 - **Project conventions** (a mandated envelope return, a house naming scheme) outrank your idiom preferences.
 
 Look for **clusters**, not single signals. One docstring is nothing; docstrings on every trivial function *plus* `# Step 1` comments *plus* `process_data(data)` *plus* a swallow-all `except` is the confession.
@@ -570,7 +601,7 @@ When you see these, lean toward leaving the code alone:
 - Pragmatic shortcuts and terse local names (`i`, `tmp`, `cfg`).
 - Domain-specific vocabulary that encodes intent.
 - Comments referencing tickets, decisions, or past bugs.
-- Intentional, consistent personal/team style — even if it isn't "textbook."
+- Intentional, consistent personal/team style, even if it isn't "textbook."
 - Uneven polish: a careful core with a rushed edge is what real, maintained code looks like.
 
 
@@ -582,7 +613,7 @@ When you see these, lean toward leaving the code alone:
 4. **Audit pass.** Ask: **"What still reads as AI here?"** Answer briefly with any residual tells.
 5. Revise into a **final rewrite** that addresses them.
 
-Deliver: the **final rewritten code**, a short list of **failure-path / behavior-relevant changes** (or "none — behavior identical"), any **audit-only flags** (hallucinated APIs, stale deps), and a brief **summary of what was changed and why**.
+Deliver: the **final rewritten code**, a short list of **failure-path / behavior-relevant changes** (or "none, behavior identical"), any **audit-only flags** (hallucinated APIs, stale deps), and a brief **summary of what was changed and why**.
 
 
 ## Full Example
@@ -651,7 +682,7 @@ def active_users(users):
     return [u for u in users if u.get("is_active")]
 ```
 
-**Failure-path / behavior changes:** The blanket `try/except` that returned `None` was removed, so malformed input now raises instead of being silently swallowed (intentional — surfaces real errors). Success-path output is unchanged for boolean `is_active` values. Dropped the unused `os`/`sys`/`json`/`typing` imports and the demo block.
+**Failure-path / behavior changes:** The blanket `try/except` that returned `None` was removed, so malformed input now raises instead of being silently swallowed (intentional, surfaces real errors). Success-path output is unchanged for boolean `is_active` values. Dropped the unused `os`/`sys`/`json`/`typing` imports and the demo block.
 
 **Audit-only flags:** none.
 
@@ -660,6 +691,6 @@ def active_users(users):
 
 ## Reference
 
-This skill is the code-focused companion to the prose `humanizer` skill. Its pattern list is distilled from published forensics on AI-generated code — detector write-ups, an empirical study of AI code in the wild, and practitioner observations — which converge on the same theme: AI code is identifiable not because it is wrong, but because it is over-documented, over-engineered, over-defensive, and uniform, with no individual voice.
+This skill is the code-focused companion to the prose `humanizer` skill. Its pattern list is distilled from published forensics on AI-generated code, detector write-ups, an empirical study of AI code in the wild, and practitioner observations, which converge on the same theme: AI code is identifiable not because it is wrong, but because it is over-documented, over-engineered, over-defensive, and uniform, with no individual voice.
 
-Key insight: LLMs emit the most statistically likely, widely-applicable code, which trends toward textbook polish. Humanizing means removing that polish where it is noise and matching the idiom of a real codebase — never adding bugs or changing what the program does.
+Key insight: LLMs emit the most statistically likely, widely-applicable code, which trends toward textbook polish. Humanizing means removing that polish where it is noise and matching the idiom of a real codebase, never adding bugs or changing what the program does.

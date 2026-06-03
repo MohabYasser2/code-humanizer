@@ -1,14 +1,14 @@
-# Language Guide — per-language safety for human-signal injection
+# Language Guide: per-language safety for human-signal injection
 
 The injection track (`HUMAN-SIGNALS.md`) tags every signal SAFE/CONDITIONAL/FLAG, but those tiers
 **shift by language**. The same whitespace edit is free in C# and fatal in Python. This file
-gives the per-language specifics for the languages the skill targets first-class —
-**JavaScript, TypeScript, C#** — plus shorter notes for the rest of the C-family.
+gives the per-language specifics for the languages the skill targets first-class,
+**JavaScript, TypeScript, C#**, plus shorter notes for the rest of the C-family.
 
 Read this before applying any whitespace, type, or idiom signal in these languages.
 
 > **Formatter caveat (applies to all three).** If the project runs an autoformatter on save or
-> in CI — **Prettier** (JS/TS), **`dotnet format`/EditorConfig/IDE format** (C#) — then injected
+> in CI (**Prettier** for JS/TS, **`dotnet format`**/EditorConfig/IDE format for C#), then injected
 > whitespace entropy (H1, H2, H4, H5, H8, H10) gets normalized away on the next format. In a
 > formatted project, whitespace injection is pointless (or actively reverted); lean on
 > **comments, commented-out code, naming, and idioms** instead, which formatters don't touch.
@@ -20,13 +20,13 @@ Read this before applying any whitespace, type, or idiom signal in these languag
 
 | Signal class | JavaScript | TypeScript | C# | Python |
 |---|---|---|---|---|
-| Operator/brace/indent whitespace (H1–H10) | SAFE | SAFE | SAFE | indent/tabs FLAG, rest SAFE |
+| Operator/brace/indent whitespace (H1-H10) | SAFE | SAFE | SAFE | indent/tabs FLAG, rest SAFE |
 | Remove a semicolon | SAFE (ASI traps → FLAG, see below) | SAFE (same traps) | FLAG **required** | n/a |
-| Comments / commented-out code (H12–H21) | SAFE | SAFE | SAFE | SAFE |
+| Comments / commented-out code (H12-H21) | SAFE | SAFE | SAFE | SAFE |
 | Typos in comments / strings (H22) | SAFE | SAFE | SAFE | SAFE |
 | Drop a type annotation | n/a | CONDITIONAL **compile-gated** | CONDITIONAL (`var`↔explicit is SAFE) | SAFE |
 | `===`→`==` / `==`→loose equality | FLAG | FLAG | CONDITIONAL (value vs ref/`.Equals`) | n/a |
-| Rename a local (H27–H31) | CONDITIONAL | CONDITIONAL | CONDITIONAL | CONDITIONAL |
+| Rename a local (H27-H31) | CONDITIONAL | CONDITIONAL | CONDITIONAL | CONDITIONAL |
 | Rename a field/prop/public symbol | FLAG (string/reflection refs) | FLAG | FLAG (serialization/reflection by name) | FLAG |
 
 "CONDITIONAL compile-gated" = runtime-neutral but must pass the compiler; verify before applying.
@@ -35,33 +35,33 @@ Read this before applying any whitespace, type, or idiom signal in these languag
 
 ## JavaScript
 
-**Whitespace.** Non-syntactic → H1–H10 are SAFE. Indentation width, brace style (`if(x){` vs
+**Whitespace.** Non-syntactic → H1-H10 are SAFE. Indentation width, brace style (`if(x){` vs
 `if (x) {`), spaces around `=`/operators, blank lines: all free (unless Prettier reverts them).
 
 **Semicolons (ASI).** Removing semicolons is usually SAFE, but Automatic Semicolon Insertion has
-real traps — a statement that *begins* with `(`, `[`, `` ` ``, `+`, `-`, or `/` can glue onto the
+real traps, a statement that *begins* with `(`, `[`, `` ` ``, `+`, `-`, or `/` can glue onto the
 previous line and change meaning. Removing the `;` before such a line is FLAG. Adding semicolons is
 always SAFE.
 
 **Equality.** `===`↔`==` and `!==`↔`!=` change behavior via coercion (`0 == ""` is `true`).
-FLAG — flag, never auto-swap.
+FLAG (never auto-swap).
 
 **Declarations.** `const`→`let` is SAFE (only widens what's allowed; current behavior identical).
-`let`/`const`→`var` is FLAG (hoisting + function-scope + closure capture differ — classic loop-var
+`let`/`const`→`var` is FLAG (hoisting + function-scope + closure capture differ, classic loop-var
 bug). `var`→`let` is CONDITIONAL (usually fine, can change a closure that relied on hoisting).
 
 **Arrow vs `function`.** Swapping is FLAG if the body uses `this`, `arguments`, `new`, or
 `yield`; SAFE for a pure callback that uses none of them.
 
 **Strings.** `'…'`↔`"…"` is SAFE (mind escaping). A template literal `` `…${x}…` `` is **not**
-interchangeable with a plain string unless you actually interpolate — converting a static
-template to a quote is SAFE, the reverse only if there's no `${}`.
+interchangeable with a plain string unless you actually interpolate. Converting a static
+template to a quote is SAFE; the reverse is SAFE only if there's no `${}`.
 
 **Human/legacy signals to inject (SAFE unless noted):** `var` and `function` declarations instead
-of `const`/arrow; sloppy `==` *where it was already sloppy* (don't introduce it — FLAG); classic
+of `const`/arrow; sloppy `==` *where it was already sloppy* (don't introduce it, FLAG); classic
 `for (var i = 0; i < a.length; i++)` loops next to a `.map`; string `+` concat mixed with
 templates; `var self = this;`; callback style next to `async/await`; `// eslint-disable-line`;
-JSDoc `/** */` on one function and nothing on the next; `console.log('here')` left in (CONDITIONAL — it's
+JSDoc `/** */` on one function and nothing on the next; `console.log('here')` left in (CONDITIONAL: it's
 a side effect; prefer commented `// console.log(x)`).
 
 **Comments:** `//`, `/* */`, JSDoc `/** */`.
@@ -88,24 +88,24 @@ load-bearing at compile time**, even though they erase at runtime.
 inconsistent optional `?`; `Array<T>` next to `T[]`. These are authentic TS-dev tells and are
 SAFE/CONDITIONAL (run `tsc` after).
 
-**Do not** "humanize" by deleting types in a strict project — that breaks the build. In TS,
+**Do not** "humanize" by deleting types in a strict project, that breaks the build. In TS,
 prefer comment/naming/idiom signals over type-stripping.
 
 ---
 
 ## C#
 
-Compiled and statically typed, but **whitespace is fully non-syntactic → H1–H10 are SAFE**
+Compiled and statically typed, but **whitespace is fully non-syntactic → H1-H10 are SAFE**
 (again, only useful if no formatter/EditorConfig reverts them).
 
 **Brace style.** The C# default is Allman (brace on its own line); plenty of real code mixes
 Allman and K&R. Mixing is SAFE and a genuine human signal.
 
 **`var` ↔ explicit type.** SAFE when the inferred type matches the explicit one (identical IL).
-Humans mix `var x = new List<int>();` with `List<int> y = ...` freely — a strong, safe signal.
+Humans mix `var x = new List<int>();` with `List<int> y = ...` freely, a strong, safe signal.
 
 **`this.` qualifier.** Adding `this.` is SAFE. Removing it is SAFE **unless** a parameter or local
-shadows the field — then removal rebinds to the wrong symbol → FLAG. Inconsistent `this.` usage is
+shadows the field, then removal rebinds to the wrong symbol → FLAG. Inconsistent `this.` usage is
 very human; inject it only where no shadowing exists.
 
 **`#region` / `#endregion`.** Compiler-ignored → SAFE. Real C# devs (and IDE refactors) leave
@@ -115,9 +115,9 @@ these everywhere; a stray `#region` is an authentic, safe organizational signal.
 next is normal.
 
 **Idioms (SAFE when provably equivalent):** LINQ query syntax (`from x in xs where … select x`)
-↔ method syntax (`xs.Where(…).Select(…)`) — the compiler translates one to the other; mixing is
+↔ method syntax (`xs.Where(…).Select(…)`). The compiler translates one to the other; mixing is
 human. Expression-bodied members (`=> expr`) ↔ block bodies. `$"{x}"` interpolation ↔
-`string.Format`/`+` concat — SAFE if the result string is identical (watch culture and format
+`string.Format`/`+` concat; SAFE when the result string is identical (watch culture and format
 specifiers like `{x:0.00}`).
 
 **Equality.** `==` vs `.Equals()` can differ for reference types and nullable values → CONDITIONAL/FLAG.
@@ -126,7 +126,7 @@ Don't swap them as a "signal."
 **Properties.** Auto-property `{ get; set; }` ↔ a manual backing field is SAFE *only* if the
 manual version adds no logic; if there's a setter side effect, they differ → FLAG.
 
-**Renames are dangerous in C#** because names are bound by string in several places — see the
+**Renames are dangerous in C#** because names are bound by string in several places; see the
 checklist below. Renaming a **local** is CONDITIONAL; renaming a **field/property/method/public symbol**
 is FLAG.
 
@@ -137,25 +137,25 @@ chain; `string.Format` next to interpolation; private fields as `_camelCase` in 
 
 ---
 
-## Other C-family (C, C++, Java) — short version
+## Other C-family (C, C++, Java): short version
 
-Whitespace H1–H10 are SAFE (compiler ignores formatting); semicolons are **required** (removing
+Whitespace H1-H10 are SAFE (compiler ignores formatting); semicolons are **required** (removing
 one is FLAG). Pointer-spacing style in C/C++ (`int* p` vs `int *p` vs `int * p`) is a SAFE signal and
 a real per-dev habit. `int x=y ;` (no spaces around `=`, space before `;`) is the canonical
-brace-language whitespace tell — SAFE. Java: brace style and `final` usage vary by dev. Renames of
+brace-language whitespace tell, SAFE. Java: brace style and `final` usage vary by dev. Renames of
 public members are FLAG (reflection, serialization, overrides).
 
-## Formatter-enforced languages (Go, Rust) — caution
+## Formatter-enforced languages (Go, Rust): caution
 
-`gofmt`/`rustfmt` rewrite formatting on every save/build, so **whitespace injection is erased**
-— don't bother. Go *requires* tabs (mixing in spaces is FLAG). In these languages the only durable
+`gofmt`/`rustfmt` rewrite formatting on every save/build, so **whitespace injection is erased**;
+don't bother. Go *requires* tabs (mixing in spaces is FLAG). In these languages the only durable
 human signals are comments, commented-out code, naming, and idiom choices, not whitespace.
 
 ---
 
 ## How the skill uses this file
 
-When the injection track runs (opt-in), after the language branch:
+When the injection track runs (auto mode by default, or additive mode), after the language branch:
 1. Detect the language and whether a formatter is configured (skip whitespace signals if so).
 2. Pull that language's SAFE set from the matrix above; demote anything language-risky to FLAG.
 3. Apply SAFE + verified CONDITIONAL edits only; collect FLAG items as suggestions. Then compile/parse-check with the language's tool
