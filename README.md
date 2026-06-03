@@ -263,6 +263,15 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.9.0**: Fixed the bug behind "the humanizer only ever changes comments, never code." The
+  skill told the model to edit by hand with `Read/Edit/Write`, but putting whitespace on most
+  lines that way needs hundreds of tiny exact-match `Edit` calls, which is infeasible, so the
+  model quietly dropped the code-level changes and did the few comment edits it could. The fix:
+  for a heavy pass the model **rewrites the whole file**, authoring the full new content itself
+  and `Write`-ing it back (still by hand, line by line; still not a script). Added a "diff that
+  changed only comments means you skipped the code-level pass" check, and rewrote the Python
+  worked example so its code lines are actually respaced (it had been pristine, which taught
+  comments-only behavior).
 - **1.8.0**: Turned injection up to hard quantified targets. **At least 80% of the lines in a
   file** now get some inline whitespace change, and the `#`/`//` space goes **roughly 50/50** so
   about half of all comments (existing and injected) have no space after the hash (AI always adds

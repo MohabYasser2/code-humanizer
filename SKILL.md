@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.8.0
+version: 1.9.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -78,6 +78,18 @@ the code. A script does blind substitution: it catches only the one pattern you 
 no judgment, misses every semantic rewrite (renames, restructuring, rephrasing a comment), and
 produces a shallow diff such as swapping a single punctuation mark. Scripts are allowed only for
 verification (tests, compile, parse check) after the edits are made.
+
+**Rewrite the whole file; do not nibble with a few small edits.** A real pass changes the code on
+most lines (spacing, idioms, names), not just the comments. You cannot reach that with a handful
+of surgical `Edit` calls, and putting inline whitespace on 80% of the lines that way would take
+hundreds of tiny edits, so the model that tries it ends up changing only comments. That is the
+single most common failure of this skill: a diff where "no code changed." Instead, **author the
+entire new file content yourself and `Write` it back**: read the whole file, then type out every
+line with the spacing, the no-space and spaced `#` comments, the idioms, and the names you have
+chosen, reproducing all the logic exactly. That is still by hand (you write each line with
+judgment) and is not a script (no program transforms the old text). Use a surgical `Edit` only for
+a one-off tweak; use a full `Write` for the humanization pass, then verify the file still parses
+and behaves identically. If your diff touched only comments, you skipped the code-level pass.
 
 **Cover everything.** Process every file and region top to bottom, including code that looks
 human-written. "Looks clean" is never a reason to skip. The only limits are behavior (above) and
@@ -201,7 +213,8 @@ content, do not skip it.
 Per file: read it in full, edit by hand, then re-check signatures, control flow, returns, side
 effects, and ordering against the original. List any failure-path change. Verify (tests, type
 check, or at least a parse/compile). Ask "what still reads as AI, and what did I skip?" and go
-back and cover it.
+back and cover it. **If the only thing your diff changed is comments, you skipped the whole
+code-level pass** (whitespace on most lines, idioms, names); redo it as a full file rewrite.
 
 Deliver: the rewritten code, the failure-path / behavior-relevant changes (or "none, behavior
 identical"), any audit-only flags (hallucinated APIs, stale deps), and a short summary of what

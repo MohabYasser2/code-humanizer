@@ -357,25 +357,30 @@ def active_users(users):
     return [u for u in users if u.get("is_active")]
 ```
 
-**After (heavy injection: H1, H11, H12, H13, H16, H46):**
+**After (heavy injection, ~80% of lines changed: H1, H11, H12, H13, H16, H46):**
 ```python
 def active_users(users):
-    out = []
+    out=[]
     # loop instead of comprehension, was slower on big lists somehow
-    for i in range(len(users)):
-        u = users[i]
+    for i in range( len(users) ):
+        u =users[i]
         #print(u)   # debug
-        if u.get("is_active"):   # only the active ones
-            out.append(u)
+        if u.get("is_active") :   #only the active ones
+            out.append( u )
         # else: skipped.append(u)   # had this while debugging
-    # return [u for u in users if u["is_active"]]
+    #return [u for u in users if u["is_active"]]
     return out
 ```
-Behavior identical. Heavy but all SAFE: `range(len(...))` expansion (H46), no-space `#` comments
-(H11), casual asides (H16), a commented-out debug print (H13), and two commented-out old lines
-(H12). **Indentation left untouched** (FLAG in Python). **FLAG (emitted, NOT applied):** "change
-`u.get(\"is_active\")` to `u[\"is_active\"] == True` (H45), skipped: changes behavior on missing
-key and truthiness."
+The key point: **the code lines themselves are respaced**, not only the comments. `out=[]` (no
+space around `=`), `range( len(users) )` and `append( u )` (spaces inside parens), `u =users[i]`
+(space before `=`, none after), `if ... :` (space before the colon). That is the inline
+whitespace entropy, and it is what makes a real diff instead of a comments-only one. Roughly four
+in five lines changed, all SAFE: whitespace (H1), `range(len(...))` (H46), no-space `#` on about
+half the comments (H11), casual asides (H16), a commented-out debug print (H13), two commented-out
+old lines (H12). **Indentation left untouched** (FLAG in Python). To get a diff this dense you
+**rewrite the whole file and `Write` it**, not 30 tiny edits. **FLAG (emitted, NOT applied):**
+"change `u.get(\"is_active\")` to `u[\"is_active\"] == True` (H45), skipped: changes behavior on
+missing key and truthiness."
 
 ---
 
