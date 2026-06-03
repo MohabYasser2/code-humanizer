@@ -8,6 +8,15 @@ AI-generated code is rarely wrong in syntax. It is *eerily uniform and over-fini
 
 Most of these edits also make the code genuinely better — less noise, less over-abstraction, fewer error-swallowing wrappers.
 
+It has **two modes**:
+
+- **Subtractive (default):** the 22 patterns below — remove AI tells, behavior-preserving.
+- **Additive (opt-in):** a separate `HUMAN-SIGNALS.md` track that *injects* the affirmative
+  fingerprints of hand-written code (formatting entropy, commented-out trial code, lived-in
+  `FIXME`s, typos in comments, idiosyncratic naming). Off by default; runs only when you ask.
+  It is governed by a 🟢/🟡/🔴 safety tier so it never auto-applies an edit that could change
+  behavior or break — see [Human-signal injection](#human-signal-injection-opt-in) below.
+
 ## Installation
 
 The skill is just a folder of Markdown files. Drop it into your skills directory and it's live.
@@ -128,6 +137,52 @@ This is what makes a *code* humanizer different from a prose one:
 |---|---------|-----|
 | 22 | Hallucinated APIs / deprecated libraries | Flag for the user; never fabricate a fix |
 
+## Human-signal injection (opt-in)
+
+The patterns above *remove* AI tells. The opt-in **additive** track in
+[`HUMAN-SIGNALS.md`](HUMAN-SIGNALS.md) does the reverse — it *injects* the affirmative
+fingerprints of hand-written code. Trigger it explicitly: *"inject human signals"*,
+*"make this look hand-written"*, or `--inject-signals`. It stays off otherwise.
+
+The research basis ([*Whitespaces Don't Lie*](https://arxiv.org/pdf/2601.19264)): human code
+shows **15–40% higher formatting variance** than AI on identical logic — *"humans create
+intentional inconsistency; AI generates unintentional uniformity."* So the goal is to add
+**variance, not mess** — and variance that doesn't compile is useless.
+
+Every signal carries a safety tier:
+
+- 🟢 **Safe** — behavior-neutral (comments, blank lines, whitespace in brace languages, typos
+  inside log strings). Auto-applied.
+- 🟡 **Conditional** — safe only if applied completely / in a compatible language (a total
+  rename, an equivalent idiom swap). Applied only after verifying.
+- 🔴 **Flag-only** — can change behavior or fail to compile (identifier typos, Python
+  indentation/tabs, `== True`/`== None`). **Reported, never auto-applied.**
+
+The H-track has 50 signals across seven groups:
+
+| Group | Examples | Notes |
+|-------|----------|-------|
+| Whitespace entropy (H1–H11) | `x=y` vs `x = y`, `int x = y ;`, irregular blank lines, mixed quotes | 🟢 in C/Java/JS; indentation/tabs are 🔴 in **Python** |
+| Lived-in comments (H12–H21) | commented-out code, `# FIXME ask Omar`, venting, stale comments | the strongest human tell — AI strips these |
+| Typos & grammar (H22–H26) | `recieve`/`occured` in comments, loose grammar | 🟢 in comments; 🔴 in identifiers |
+| Naming chaos (H27–H31) | `tmp`/`tmp2`, `df_copy`, camel+snake mix | 🟡 — rename every reference |
+| Structural scars (H32–H40) | copy-paste duplication, magic numbers, `i = i + 1` | uneven polish, careful core + rushed edge |
+| Import habits (H41–H44) | mid-file imports, unused leftovers, commented-out imports | 🟢 |
+| Legacy idioms (H45–H49) | `range(len(x))`, redundant parens, `== True` | `== True`/`== None` are 🔴 |
+
+Plus the **density rule**: apply an *uneven* subset (5–10 signal types per file), not a
+uniform layer — a uniform layer of noise is just a different detectable uniformity. And a hard
+**language branch**: in Python, never touch leading indentation or tabs (syntactic → 🔴); all
+Python entropy comes from operator spacing, blank lines, comments, and idioms.
+
+For **JavaScript, TypeScript, and C#**, [`LANGUAGES.md`](LANGUAGES.md) carries the per-language
+tiers and traps — TS type edits are compile-gated 🟡; JS `===`→`==` and `let`→`var` are 🔴; C#
+`var`↔explicit, `#region`, and LINQ↔method syntax are 🟢 — plus a **formatter caveat**: if
+Prettier / `dotnet format` / EditorConfig runs on save or in CI, injected whitespace is
+normalized away, so lean on comments, naming, and idioms instead. Renames are hardened by a
+**complete-reference checklist** (locals are 🟡; fields/properties/public symbols are 🔴 because
+they bind by string in serialization and reflection).
+
 ## Full Example
 
 **Before (obviously AI-generated):**
@@ -160,12 +215,35 @@ def active_users(users):
 
 ## Scope
 
-Configured for **behavior-preserving naturalization** (remove AI tells + match idiomatic human/repo style), with **Python** as the primary example language. It does **not** inject deliberate bugs, vulnerabilities, or stale dependencies, and it does not silently rewrite code it can't verify.
+The **default subtractive mode** does behavior-preserving naturalization (remove AI tells +
+match idiomatic human/repo style). The **opt-in additive mode** injects human signals, but is
+bounded by the same hard line: it auto-applies only edits proven behavior-neutral (🟢) or
+verified-complete (🟡), and **flags — never auto-writes — anything that could change behavior
+or fail to compile** (🔴: identifier typos, Python indentation/tab changes, `== True`/`== None`).
+Neither mode injects deliberate bugs, vulnerabilities, or stale dependencies, and neither
+silently rewrites code it can't verify. Examples are **Python**-primary; the additive track has
+first-class, per-language coverage for **JavaScript, TypeScript, and C#** (see
+[`LANGUAGES.md`](LANGUAGES.md)), plus the wider C-family, because it branches on language —
+whitespace that is free in C# is fatal in Python, and type edits that are safe in JS break a
+strict TypeScript build.
 
 > Note on honest use: where authorship disclosure is required (for example, academic submissions or assessments), disclosing AI assistance remains your responsibility. This skill is a code-quality and style tool, not a way to misrepresent authorship.
 
 ## Version History
 
+- **1.1.0** — Added the opt-in **additive** track (`HUMAN-SIGNALS.md`): 50 human-signal
+  patterns (H1–H50) across whitespace entropy, lived-in comments, typos, naming chaos,
+  structural scars, import habits, and legacy idioms. Introduced the 🟢/🟡/🔴 safety tier
+  (auto-apply only behavior-neutral edits; flag-only for anything that could break), a
+  per-language whitespace matrix (Python indentation/tabs are flag-only), the density rule
+  (uneven subset, not a uniform layer), and two worked examples. Added **`LANGUAGES.md`** with
+  first-class per-language coverage for **JavaScript, TypeScript, and C#** (plus the wider
+  C-family and a formatter caveat), and hardened the 🟡 rename rule with a
+  **complete-reference checklist** (locals 🟡; fields/properties/public symbols 🔴). Resolved
+  the Pattern 14 contradiction (the "no fake mess" rule now scopes to the default subtractive
+  mode). Grounded in published code-stylometry forensics (*Whitespaces Don't Lie*,
+  arXiv 2601.19264). Behavior-preservation validated on a sample (subtractive + injection,
+  parse + behavior-identical).
 - **1.0.0** — Initial release. 22 patterns across comments/docs, naming, structure, error handling, types/formatting/idioms, and audit-only. Behavior contract, style calibration, detection guidance, and a full worked example. Python-focused.
 
 ## License

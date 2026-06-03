@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.0.0
+version: 1.1.0
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -9,7 +9,11 @@ description: |
   tutorial-voice comments, emoji and print() narration, verbose dictionary-style names,
   generic placeholder names, over-engineering and premature abstraction, blanket
   try/except that swallows errors, useless type hints, status-envelope returns, eerie
-  uniformity, dead imports, and appended demo blocks. Strictly behavior-preserving.
+  uniformity, dead imports, and appended demo blocks. Strictly behavior-preserving by
+  default. Also ships an optional, opt-in "human-signal injection" track (see
+  HUMAN-SIGNALS.md) that adds the affirmative fingerprints of hand-written code —
+  formatting entropy, commented-out code, lived-in comments, idiosyncratic naming — under a
+  strict safety tier that never auto-applies an edit that could change behavior or break.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -34,7 +38,16 @@ So the job is not "make the code worse." It is: **strip the AI slop, then let th
 
 ## Your Task
 
-When given code to humanize:
+**Two modes — default to the first.**
+- **Subtractive (default, always available):** remove the AI tells below. Strictly
+  behavior-preserving. This is what `/code-humanizer` does unless told otherwise.
+- **Additive (opt-in only):** *inject* affirmative human signals (formatting entropy,
+  commented-out code, typos in comments, idiosyncratic naming). Runs **only when the user
+  explicitly asks** ("inject human signals", "make it look hand-written", `--inject-signals`).
+  When asked, read **`HUMAN-SIGNALS.md`** and follow its safety-tiered process. Best results
+  come from running the subtractive pass first, then injecting.
+
+When given code to humanize (subtractive mode):
 
 1. **Identify AI patterns** — scan for the patterns listed below.
 2. **Rewrite, preserve behavior** — change style and structure, never logic. See THE BEHAVIOR CONTRACT.
@@ -368,7 +381,7 @@ def get_user(uid):
 
 **Problem:** Perfectly even formatting, identical structure across files, no variation, no maintenance scars. The absence of human "drift" is itself a tell.
 
-**Fix:** Allow natural, *valid* variation that fits the code — a guard clause here, an inline expression there, a terse name in a tight loop. **Do not manufacture fake mess** (no random misindentation, no deliberate typos, no inconsistency for its own sake). The goal is idiomatic naturalness, not vandalism. This pattern is satisfied as a side effect of applying the others well, not by adding noise.
+**Fix:** Allow natural, *valid* variation that fits the code — a guard clause here, an inline expression there, a terse name in a tight loop. **In the default subtractive mode, do not manufacture fake mess** — no random misindentation, no deliberate typos, no inconsistency for its own sake; that naturalness should emerge as a *side effect* of applying patterns 1–21 well, not by adding noise. Deliberate human-signal *injection* (formatting entropy, commented-out code, typos in comments, idiosyncratic naming) is a separate, **opt-in** capability with its own safety contract — see `HUMAN-SIGNALS.md`. It is off by default and never runs unless the user explicitly asks for it.
 
 
 ## ERROR HANDLING PATTERNS
@@ -508,6 +521,30 @@ Only apply idioms the surrounding code actually uses; don't out-clever a deliber
 **Problem:** AI invents plausible methods (`db.fast_query()`), wrong parameters, or pulls in deprecated/abandoned libraries from its training window.
 
 **Fix:** **Do not fabricate a replacement and move on.** Flag any call you can't verify exists, and any library that looks deprecated, as a finding for the user. Verify against installed packages / docs when possible. Humanizing must never paper over a correctness bug.
+
+
+## OPTIONAL: HUMAN-SIGNAL INJECTION (opt-in, separate track)
+
+Everything above is **subtractive** — it removes AI tells without adding anything. The skill
+also has an **additive** track that *injects* the affirmative fingerprints of hand-written
+code: formatting entropy, commented-out trial code, lived-in `FIXME`s, typos in comments,
+idiosyncratic naming, evolution scars.
+
+- **It is off by default.** Run it **only when the user explicitly asks** ("inject human
+  signals", "make it look hand-written", `--inject-signals`).
+- **When asked, read `HUMAN-SIGNALS.md`** and follow it. That file holds the H-track catalog
+  (H1–H50), a 🟢/🟡/🔴 safety tier, a per-language whitespace matrix, the density rule, and the
+  injection process.
+- **For JavaScript, TypeScript, or C# code, also read `LANGUAGES.md`** — per-language tiers
+  (TS type edits are compile-gated; JS `===`/`var` swaps and C# field renames are flag-only)
+  and the formatter caveat (Prettier / `dotnet format` normalize injected whitespace away).
+- **The hard safety rule:** auto-apply only 🟢 (provably behavior-neutral) and *verified* 🟡
+  edits. 🔴 edits (identifier typos, Python indentation/tab changes, `== True`/`== None`
+  semantics) are **flagged for the human, never written by the skill.** This is what keeps
+  injected code working.
+- **Order:** run the subtractive pass first, then inject — it is more robust and safer than
+  leading with noise. Verify the result still parses / passes tests, and revert anything that
+  breaks.
 
 
 ## DETECTION GUIDANCE
