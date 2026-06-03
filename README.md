@@ -111,7 +111,10 @@ This is what makes a *code* humanizer different from a prose one:
 - **Failure-path changes are surfaced, not silent**: e.g., removing a swallow-all `except` makes the code raise instead of returning `None`; that is flagged as an explicit decision.
 - **Verified when possible**: tests / type checker / linter are run after the rewrite if the project has them.
 
-## 22 Patterns Detected (with Before/After)
+## 22 Patterns Detected
+
+These are summarized below. The full Problem/Before/After for each (and a complete worked
+example) lives in [`PATTERNS.md`](PATTERNS.md).
 
 ### Comments & documentation
 
@@ -260,6 +263,15 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.6.0**: Restructured for skill best practices. `SKILL.md` is now the lean entry point
+  (~215 lines, down from 789): the 22 subtractive patterns' Before/After detail and the full
+  worked example moved into a new `PATTERNS.md` (progressive disclosure), leaving a one-line
+  summary table in `SKILL.md`. Rewrote the frontmatter `description` to 974 characters (it was
+  over the 1024 limit and malformed), deduplicated repeated rules, reordered into a clean flow
+  (modes, behavior contract, how to run, comment voice, subtractive, injection, preserve,
+  deliver), and added a Contents table to `HUMAN-SIGNALS.md`. No behavior change: every rule
+  (heavy casual injection, by-hand file-by-file processing, the safety tier, no dashes or emoji)
+  is preserved.
 - **1.5.1**: Made whole-repo runs an explicit **file-by-file loop**. The skill takes one file,
   fully humanizes it (full pass + heavy injection + verify), then moves to the next, and repeats
   until every file is done. It must **not** run a repo-wide single-pattern sweep (the shallow

@@ -1,9 +1,9 @@
 # Human-Signal Injection (auto mode's second phase, and additive mode)
 
-This is the **additive** half of Code Humanizer. The 22 patterns in `SKILL.md` *remove*
-AI tells (the subtractive pass). This track *adds* the affirmative fingerprints of
-human authorship: formatting entropy, lived-in comments, idiosyncratic naming, evolution
-scars.
+This is the **additive** half of Code Humanizer. The subtractive pass (the 22 patterns,
+summarized in `SKILL.md` and detailed in `PATTERNS.md`) *removes* AI tells. This track *adds* the
+affirmative fingerprints of human authorship: formatting entropy, lived-in comments, idiosyncratic
+naming, evolution scars.
 
 **This track runs by default.** Auto mode (the default for `/code-humanizer`) removes AI tells
 first, then injects these signals. Additive mode (`--inject-signals`) injects without the
@@ -17,6 +17,18 @@ Whitespace and indentation were the single most discriminative cues. So the obje
 **add variance, not add mess**, and variance that doesn't compile is worthless.
 
 ---
+
+## Contents
+
+- **THE INJECTION CONTRACT**: the SAFE/CONDITIONAL/FLAG safety tier, the verify step, and the
+  complete-reference rename checklist.
+- **LANGUAGE BRANCH**: which whitespace edits are safe per language (Python indentation is FLAG).
+- **THE CATALOG (H1-H50)**: whitespace entropy, comments, typos, naming chaos, structural scars,
+  import habits, legacy idioms, repo-level.
+- **INJECTION VOLUME**: inject heavily, but not uniformly.
+- **PROCESS**: the per-file injection steps.
+- **WORKED EXAMPLES**: brace language and Python.
+- **Honest use.**
 
 ## THE INJECTION CONTRACT (read this first)
 
@@ -153,7 +165,7 @@ Grouped for reference. Inject heavily and unevenly across the file, see INJECTIO
 
 > **The injected comment voice is casual, and the casual signals are encouraged.** H16 (asides
 > and working notes), H22 (the odd comment typo), and H25 (loose grammar) are part of the default
-> voice, not calibration-only. Inject plenty of them. Follow **COMMENT VOICE** in `SKILL.md`:
+> voice, not calibration-only. Inject plenty of them. Follow the "Comment voice" section in `SKILL.md`:
 > casual, human, lots of comments, no em-dashes, no emoji. Auto mode uses the same voice.
 
 ### Naming chaos
