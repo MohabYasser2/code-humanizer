@@ -83,8 +83,9 @@ Humanize this whole folder: ./src
 
 Or in a repo: *"Run the humanizer on the whole project."* It uses `git ls-files` (or Glob) to
 find the first-party source, skips dependencies, build output, and generated or binary files,
-edits each file by hand, and verifies each one still compiles. Start from a clean commit or a
-fresh branch so the diff is easy to review.
+then goes **file by file**, fully humanizing each one (and verifying it still compiles) before
+moving to the next. It never does a repo-wide single-pattern sweep. Start from a clean commit or
+a fresh branch so the diff is easy to review.
 
 ### Style calibration (recommended)
 
@@ -259,6 +260,10 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.5.1**: Made whole-repo runs an explicit **file-by-file loop**. The skill takes one file,
+  fully humanizes it (full pass + heavy injection + verify), then moves to the next, and repeats
+  until every file is done. It must **not** run a repo-wide single-pattern sweep (the shallow
+  "fix em-dashes across all files and stop" behavior). Each file gets its own complete pass.
 - **1.5.0**: Turned injection up and the comment voice loose. Injection is now **heavy by
   default** (the old density rule that said "under-injection is the correct outcome" and "pick 5
   of 50 signals" is replaced by INJECTION VOLUME: use most of the catalog across each file, add

@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.5.0
+version: 1.5.1
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -16,7 +16,8 @@ description: |
   clean-only mode does the removal without injection. The model reads and edits each file
   itself, by hand, never with a generated script, and processes everything, including code that
   looks human-written. It runs on a single snippet, a whole file, or an entire folder or
-  repository, processing every source file in the folder, not just one. In auto mode it injects
+  repository, processing every source file one at a time, fully humanizing each before the next.
+  In auto mode it injects
   heavily: lots of casual comments, commented-out lines, formatting entropy, and idiom and naming
   changes throughout each file. Every comment it writes is casual and human (a real dev's working
   notes), with no em-dashes and no emoji.
@@ -127,11 +128,25 @@ Enumerate the files to process:
    and model files. When unsure whether a file is generated or vendored, skip it and say so.
 4. List the file set you are about to process, and how many, before you start.
 
-Then process each file with the full pass (HOW TO APPLY and COVERAGE):
-- Read the whole file, edit it by hand, apply every relevant pattern and the comment voice, and
-  in auto mode inject human signals under the safety tier. Never script the transformation.
-- After each file, verify it still parses or compiles; revert that one file if it breaks.
-- Work through the entire set, file by file. Do not stop after a few or sample a subset.
+Then humanize the files **one at a time, in sequence**. This is a per-file loop, not a repo-wide
+operation:
+
+1. Take the next file in the list.
+2. Read it in full.
+3. Fully humanize that one file: run the complete pass on it (every relevant subtractive pattern,
+   the casual comment voice, and heavy human-signal injection in auto mode), editing by hand,
+   under the safety tier. Finish the file completely before moving on.
+4. Verify that file still parses or compiles; revert just that file if it breaks.
+5. Mark it done and take the next. Repeat until every file in the list is humanized.
+
+**Never run a repo-wide pass that applies one transform across all files** (for example, sweeping
+every file for em-dashes and then stopping). That single-pattern sweep is the shallow, scripted
+failure mode this skill exists to prevent: it touches one thing and leaves every file barely
+changed. Each file gets its own complete, by-hand humanization before you advance to the next.
+
+Keep a running list of which files are done and which remain, and keep going until the list is
+empty. Do not stop partway or sample a subset; the repo is not done until every file has had its
+full pass.
 
 Finish with one project-level verification (run the test suite or type check if the project has
 one), report the result, and give a short per-file summary plus the combined list of FLAG-tier
