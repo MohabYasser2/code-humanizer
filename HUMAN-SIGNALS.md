@@ -247,13 +247,15 @@ The only ceilings are the safety tier (every edit stays SAFE or verified CONDITI
 are still flagged, not applied) and basic readability (do not turn the file into unreadable
 garbage). Within those, inject heavily; under-injection is the failure mode, not over-injection.
 
-### Whitespace and `#` spacing: alter at least 80% of lines
+### Whitespace and `#` spacing (the phase-2 script does this)
 
-Whitespace entropy is the single most discriminative cue (per the research), so push it as far as
-it goes. **Alter at least 80% of the lines in every file** with some inline whitespace change.
-Most lines have room (an `=`, an operator, a comma, a call, a bracket); leave only the ones that
-genuinely have none (`pass`, a bare `)`, a decorator). Mix the kind so it is not one repeated
-transform:
+Whitespace entropy is the single most discriminative cue (per the research) and it is purely
+mechanical, so the **phase-2 script** lays it down, not by hand: run
+`python scripts/whitespace_entropy.py FILE --rate 0.7`. It varies inline spacing and the `#` split
+on about half the lines and re-tokenizes its own output to prove no code token changed. The rules
+below are what that script applies, and what to hand-apply for non-Python (no script there). Most
+lines have room (an `=`, an operator, a comma, a call, a bracket); only `pass`, a bare `)`, or a
+decorator have none. Mix the kind so it is not one repeated transform:
 
 - spacing around `=` and operators: `x=y`, `x =y`, `x= y`, `x = y`
 - spaces after or before commas: `f(a,b)`, `f(a, b)`, `f(a ,b)`, `f(a , b)`

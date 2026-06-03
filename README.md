@@ -263,6 +263,17 @@ strict TypeScript build.
 
 ## Version History
 
+- **2.0.0**: Split the pass into **two phases**, which finally fixes "the humanizer under-changes
+  the code." **Phase 1 (by hand)** is the judgment work the model is good at and must not pull
+  punches on: subtractive removal of AI tells, variable and function renames, idiom swaps, casual
+  comments and scars, aiming for a real (non-whitespace) edit on about half the lines. **Phase 2
+  (scripted)** is a new bundled tool, `scripts/whitespace_entropy.py`, that lays the inline
+  whitespace entropy and the 50/50 hash split on about half the lines, because that signal is
+  purely mechanical and the model reliably under-applies it by hand (10-20% when 50% was asked
+  for). The script changes only whitespace between tokens and the space after `#`, never
+  indentation or string contents, and it re-tokenizes its own output to prove behavior is
+  unchanged. This deliberately reverses the absolute "never script" rule from 1.3.0: scripts are
+  wrong for the judgment work, right for whitespace.
 - **1.9.0**: Fixed the bug behind "the humanizer only ever changes comments, never code." The
   skill told the model to edit by hand with `Read/Edit/Write`, but putting whitespace on most
   lines that way needs hundreds of tiny exact-match `Edit` calls, which is infeasible, so the

@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.9.0
+version: 2.0.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -72,24 +72,49 @@ Injection is governed by a three-level safety tier (full detail in `HUMAN-SIGNAL
 
 ## How to run
 
-**Edit by hand. Never script it.** Read each file and make every change yourself with
-Read/Edit/Write. Do not write or run a script (sed, awk, a regex pass, a codemod) to transform
-the code. A script does blind substitution: it catches only the one pattern you encoded, applies
-no judgment, misses every semantic rewrite (renames, restructuring, rephrasing a comment), and
-produces a shallow diff such as swapping a single punctuation mark. Scripts are allowed only for
-verification (tests, compile, parse check) after the edits are made.
+A pass has **two phases**, because two different kinds of work need two different tools. Run
+phase 1 by hand, then phase 2 with the bundled script.
 
-**Rewrite the whole file; do not nibble with a few small edits.** A real pass changes the code on
-most lines (spacing, idioms, names), not just the comments. You cannot reach that with a handful
-of surgical `Edit` calls, and putting inline whitespace on 80% of the lines that way would take
-hundreds of tiny edits, so the model that tries it ends up changing only comments. That is the
-single most common failure of this skill: a diff where "no code changed." Instead, **author the
-entire new file content yourself and `Write` it back**: read the whole file, then type out every
-line with the spacing, the no-space and spaced `#` comments, the idioms, and the names you have
-chosen, reproducing all the logic exactly. That is still by hand (you write each line with
-judgment) and is not a script (no program transforms the old text). Use a surgical `Edit` only for
-a one-off tweak; use a full `Write` for the humanization pass, then verify the file still parses
-and behaves identically. If your diff touched only comments, you skipped the code-level pass.
+### Phase 1: the judgment pass (by hand, and do not pull punches)
+
+Everything that needs understanding, you do yourself by reading the file and rewriting it. **Do
+not script phase 1**: a regex or codemod has no judgment and produces a shallow diff (the
+em-dash-only sweep that fails this skill). Phase 1 must actually change *code*, not just add
+comments. Aim for **about half the lines to get a real, non-whitespace edit**:
+
+- **Subtractive removal of AI tells** (the table below; detail in `PATTERNS.md`): verbose
+  docstrings, restating and banner/`Step N` comments, emoji prints, dead imports, error-swallowing
+  `try/except`, status envelopes, over-engineering.
+- **Variable and function renames** (the naming humanification): AI-verbose names become idiomatic
+  (`total_user_input_character_count` to `char_count`, `process_data` to the domain verb). A
+  rename is CONDITIONAL: change every reference, then re-check. This is required, not optional.
+  Where the names are already idiomatic (calibration), there is little to rename and that is fine,
+  but you must look.
+- **Idiom swaps**: `range(len(x))` to `enumerate`, a manual loop to a comprehension, where
+  equivalent for the type.
+- **Casual comments, commented-out scars, and the occasional typo** (`HUMAN-SIGNALS.md`).
+
+A heavy pass is hundreds of edits, infeasible as small `Edit` calls, so **author the new file
+content yourself and `Write` it back**, reproducing all logic exactly. **A diff that only added
+comments, or only changed whitespace, means you skipped phase 1.** Do not retreat to comments.
+
+### Phase 2: the whitespace pass (scripted)
+
+Inline whitespace entropy on most lines is the one signal that is purely mechanical (no judgment),
+and the one the model reliably under-applies by hand: it reads as vandalizing working code, so the
+model stops short (10-20% coverage when 50% was asked for). So a script does it. After phase 1,
+run the bundled tool:
+
+```
+python scripts/whitespace_entropy.py FILE --rate 0.7
+```
+
+It lays down inline whitespace entropy and the 50/50 `#` split on about half the lines, changing
+**only** the whitespace between tokens and the space after `#`, never indentation or string
+contents. It re-tokenizes its own output and aborts if any code token changed, so behavior is
+provably preserved. This is the one place a script is correct, because whitespace needs no
+judgment. (It is Python-only, since indentation is syntactic; for other languages hand-apply the
+whitespace signals from `HUMAN-SIGNALS.md`.)
 
 **Cover everything.** Process every file and region top to bottom, including code that looks
 human-written. "Looks clean" is never a reason to skip. The only limits are behavior (above) and
@@ -107,13 +132,13 @@ does not name each file.
    directories (`node_modules`, `vendor`, `dist`, `build`, `target`, `bin`, `obj`, `__pycache__`,
    `.venv`/`venv`, `.git`), minified or generated files, binaries, data, and model files. List the
    set and its size before starting.
-2. **Loop file by file.** Take the next file, read it in full, fully humanize it (the complete
-   pass: subtractive plus heavy injection in auto), verify it parses or compiles, revert just that
-   file if it breaks, mark it done, take the next. Keep a running done/remaining list and repeat
-   until the list is empty.
-3. **Never run a repo-wide single-pattern sweep** (for example, fix em-dashes across every file
-   and stop). That is the shallow, scripted failure mode this skill exists to prevent. Each file
-   gets its own complete, by-hand pass before you advance.
+2. **Loop file by file.** Take the next file, read it in full, run **phase 1 by hand**
+   (subtractive plus renames, idioms, casual comments) then **phase 2** on it
+   (`scripts/whitespace_entropy.py`), verify it parses or compiles, revert just that file if it
+   breaks, mark it done, take the next. Keep a running done/remaining list and repeat until empty.
+3. **Never let a repo-wide single-pattern sweep stand in for the judgment work** (for example,
+   fixing em-dashes across every file and stopping). Phase 1 is per file, by hand. The phase-2
+   whitespace script is mechanical and is meant to run per file; it does not replace phase 1.
 4. **Finish** with one project-level test or type check, a per-file summary, and the combined list
    of FLAG-tier items for the human. Recommend a clean commit or fresh branch first so the diff is
    easy to review and revert.
