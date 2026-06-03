@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 2.1.0
+version: 2.2.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -109,9 +109,9 @@ run the bundled tool:
 python scripts/whitespace_entropy.py FILE --rate 0.7
 ```
 
-It lays down inline whitespace entropy and the 50/50 `#` split on about half the lines, changing
-**only** the whitespace between tokens and the space after `#`, never indentation or string
-contents. It re-tokenizes its own output and aborts if any code token changed, so behavior is
+It lays down inline whitespace entropy, the 50/50 `#`/`//` split, and occasional blank lines at
+safe statement boundaries (`--blank-rate`), on about half the lines, changing **only** whitespace,
+never indentation, string contents, or any code token. It re-tokenizes its own output and aborts if any code token changed, so behavior is
 provably preserved. This is the one place a script is correct, because whitespace needs no
 judgment. It handles **Python and the brace family** (JavaScript, TypeScript, C#, C/C++, Java);
 for Python it never touches indentation, and for brace languages it perturbs only around

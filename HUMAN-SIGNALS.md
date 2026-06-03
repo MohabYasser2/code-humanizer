@@ -251,8 +251,9 @@ garbage). Within those, inject heavily; under-injection is the failure mode, not
 
 Whitespace entropy is the single most discriminative cue (per the research) and it is purely
 mechanical, so the **phase-2 script** lays it down, not by hand: run
-`python scripts/whitespace_entropy.py FILE --rate 0.7`. It varies inline spacing and the `#` split
-on about half the lines and re-tokenizes its own output to prove no code token changed. The rules
+`python scripts/whitespace_entropy.py FILE --rate 0.7`. It varies inline spacing, the `#`/`//`
+split, and occasional blank lines (`--blank-rate`, the H4 random-blank-lines signal) on about half
+the lines, and verifies its own output to prove no code token changed. The rules
 below are what that script applies; it now covers Python and the brace family (JS, TS, C#, C/C++,
 Java), so hand-apply only for a language it does not handle. Most
 lines have room (an `=`, an operator, a comma, a call, a bracket); only `pass`, a bare `)`, or a

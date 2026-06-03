@@ -16,8 +16,9 @@ Languages (dispatched by file extension):
   - Go/Rust (.go .rs): handled by the brace path, but gofmt/rustfmt will erase the entropy on the
     next build, so it warns.
 
-It changes ONLY whitespace between tokens (and the space after a # or // on ~half of comments). It
-never alters indentation, string/char/comment contents, or any code token, and it verifies that
+It changes ONLY whitespace: the gaps between tokens, the space after a # or // on about half of
+comments, and the occasional blank line at a safe statement boundary. It never alters indentation,
+string/char/comment contents, or any code token, and it verifies that
 before writing: Python re-tokenizes; brace languages compare the protected spans and the
 whitespace-stripped code skeleton. Compile the result with the language's own tool for final proof.
 
@@ -218,11 +219,81 @@ def _brace_ok(orig, new):
     """behavior preserved iff the non-comment protected spans match and the whitespace-stripped
     code skeleton (newlines kept) matches. combined with the delimiter-only rule, no token merges."""
     def skel(src):
-        return ''.join(re.sub(r'[ \t]+', '', t) for k, t in _brace_segments(src) if k == 'code')
+        code = ''.join(t for k, t in _brace_segments(src) if k == 'code')
+        return re.sub(r'\n+', '\n', re.sub(r'[ \t]+', '', code))   # collapse \n so added blanks pass
 
     def strs(src):
         return [t for k, t in _brace_segments(src) if k == 'prot' and not t.startswith(('//', '/*'))]
     return skel(orig) == skel(new) and strs(orig) == strs(new)
+
+
+# ----------------------------------------------------------------------------- blank lines
+
+def _compiles(src, fname):
+    try:
+        compile(src, fname, "exec")
+        return True
+    except SyntaxError:
+        return False
+
+
+def add_blanks_py(orig_src, ws_text, rate, seed):
+    """insert occasional blank lines after complete statements (NEWLINE ends), skipping decorators
+    and clause continuations. behavior-inert; the caller compile-checks as a backstop."""
+    if rate <= 0:
+        return ws_text, 0
+    rng = random.Random(seed + 1)
+    ends = {t.start[0] for t in tokenize.generate_tokens(io.StringIO(orig_src).readline)
+            if t.type == tokenize.NEWLINE}
+    lines = ws_text.splitlines(keepends=True)
+    out, n = [], 0
+    skip = ('else', 'elif', 'except', 'finally', 'case ')
+    for idx, ln in enumerate(lines):
+        out.append(ln)
+        if idx == len(lines) - 1:
+            break
+        s, nxt = ln.strip(), lines[idx + 1].strip()
+        if (idx + 1) in ends and s and not s.startswith('@') and not nxt.startswith(skip):
+            if rng.random() < rate:
+                out.append('\n'); n += 1
+                if rng.random() < 0.2:
+                    out.append('\n'); n += 1
+    return ''.join(out), n
+
+
+def add_blanks_brace(text, rate, seed):
+    """insert occasional blank lines after lines ending (in code) with ; { or }. always safe in
+    brace languages; never inside a string, char, comment, or template."""
+    if rate <= 0:
+        return text, 0
+    rng = random.Random(seed + 1)
+    prot, pos = bytearray(len(text)), 0
+    for k, t in _brace_segments(text):
+        if k == 'prot':
+            for j in range(pos, pos + len(t)):
+                prot[j] = 1
+        pos += len(t)
+    lines = text.split('\n')
+    off, acc = [], 0
+    for ln in lines:
+        off.append(acc); acc += len(ln) + 1
+    out, n = [], 0
+    for i, ln in enumerate(lines):
+        out.append(ln)
+        if i == len(lines) - 1:
+            break
+        base, last = off[i], None
+        for j in range(len(ln) - 1, -1, -1):
+            if ln[j] in ' \t':
+                continue
+            if base + j < len(prot) and prot[base + j]:
+                continue
+            last = ln[j]; break
+        if last is not None and last in '{};' and rng.random() < rate:
+            out.append(''); n += 1
+            if rng.random() < 0.25:
+                out.append(''); n += 1
+    return '\n'.join(out), n
 
 
 # ----------------------------------------------------------------------------- driver
@@ -234,7 +305,9 @@ _BRACE = {'.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx', '.cs', '.c', '.h',
 def main():
     ap = argparse.ArgumentParser(description="add inline whitespace entropy to a source file")
     ap.add_argument("file")
-    ap.add_argument("--rate", type=float, default=0.5)
+    ap.add_argument("--rate", type=float, default=0.5, help="fraction of eligible lines to respace")
+    ap.add_argument("--blank-rate", type=float, default=0.1,
+                    help="chance of a blank line after a safe statement boundary (0 to disable)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--check-only", action="store_true")
     a = ap.parse_args()
@@ -243,26 +316,26 @@ def main():
     src = open(a.file, encoding="utf-8").read()
 
     if ext == '.py':
-        new = perturb_python(src, a.rate, a.seed)
-        if _py_code_tokens(src) != _py_code_tokens(new):
-            sys.exit("ABORT: code tokens changed (bug, not your code)")
-        try:
-            compile(new, a.file, "exec")
-        except SyntaxError as e:
-            sys.exit(f"ABORT: result does not compile: {e}")
+        ws = perturb_python(src, a.rate, a.seed)
+        new, nblank = add_blanks_py(src, ws, a.blank_rate, a.seed)
+        if _py_code_tokens(src) != _py_code_tokens(new) or not _compiles(new, a.file):
+            new, nblank = ws, 0                       # a blank upset the parser; drop the blanks
+        if _py_code_tokens(src) != _py_code_tokens(new) or not _compiles(new, a.file):
+            sys.exit("ABORT: code tokens changed or result does not compile (bug, not your code)")
     elif ext in _BRACE:
         if ext in ('.go', '.rs'):
             print("  note: gofmt/rustfmt will erase whitespace entropy on the next build")
-        new = perturb_brace(src, a.rate, a.seed)
+        ws = perturb_brace(src, a.rate, a.seed)
+        new, nblank = add_blanks_brace(ws, a.blank_rate, a.seed)
         if not _brace_ok(src, new):
             sys.exit("ABORT: protected spans or code skeleton changed (bug, not your code)")
     else:
         sys.exit(f"unsupported extension {ext!r} (python and the brace family are supported)")
 
-    total = sum(1 for ln in src.splitlines() if ln.strip() and not ln.strip().lstrip().startswith(('#', '//')))
-    touched = sum(1 for o, n in zip(src.splitlines(), new.splitlines()) if o != n)
-    print(f"  whitespace pass: {touched} lines changed (~{100*touched/max(1,total):.0f}% of code lines), "
-          f"protected content + code tokens identical")
+    total = sum(1 for ln in src.splitlines() if ln.strip() and not ln.strip().startswith(('#', '//')))
+    touched = sum(1 for o, n in zip(src.splitlines(), ws.splitlines()) if o != n)
+    print(f"  whitespace pass: {touched} lines respaced (~{100*touched/max(1,total):.0f}% of code lines), "
+          f"{nblank} blank lines added, protected content + code tokens identical")
     if not a.check_only:
         open(a.file, "w", encoding="utf-8", newline="\n").write(new)
         print(f"  wrote {a.file}")

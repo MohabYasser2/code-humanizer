@@ -263,6 +263,12 @@ strict TypeScript build.
 
 ## Version History
 
+- **2.2.0**: The phase-2 script now also inserts **blank lines** (`--blank-rate`, the "random
+  enters"), which is the H4 irregular-blank-lines signal. It adds them only at safe statement
+  boundaries (Python: after a complete statement, never after a decorator; brace languages: after a
+  line ending in `;`, `{`, or `}`), never inside a string or comment. Behavior stays identical and
+  the result compiles, verified on Python, JavaScript, TypeScript, and C#. Python falls back to
+  no-blanks if a blank ever upset the parser.
 - **2.1.0**: The phase-2 whitespace script now handles **all the brace languages**, not just
   Python. `scripts/whitespace_entropy.py` dispatches by extension: Python uses the stdlib
   tokenizer (and never the indentation); JavaScript, TypeScript, C#, C/C++, and Java use a generic
