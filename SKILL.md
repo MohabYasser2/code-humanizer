@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.7.0
+version: 1.8.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -112,7 +112,8 @@ Every comment the skill writes or rewrites reads like a real developer's working
 terse, lived-in. Match the loose, lowercase, shorthand style of genuine human comments, for
 example `# tried 0.02, too weak`, `# was 0.008`, `# todo tune this`, `# hack, fix later`.
 
-- **Casual and human.** Lowercase is fine, fragments are fine, a no-space `#comment` is fine.
+- **Casual and human.** Lowercase is fine, fragments are fine. Put about half your comments on a
+  no-space `#comment` and half on `# comment` (AI always adds the space, so all-spaced is a tell).
 - **Why, or a working note**, never restating what the line plainly does.
 - **No em-dashes** (use a period, comma, semicolon, colon, parentheses, or just a space) and **no
   emoji**, in comments or any string the skill writes.
@@ -170,11 +171,13 @@ the injection pass's job, not random noise.
 
 After the subtractive pass, add the affirmative fingerprints of hand-written code: casual
 comments, commented-out trial code and debug prints, formatting entropy, idiomatic naming,
-evolution scars. **Inject heavily**: reach across most of the catalog, with many casual comments and several
-commented-out lines per file, inline whitespace entropy on nearly every line (in Python, inside
-the line only, never the indent column, or it raises `IndentationError`), and a small typo or
-punctuation slip in about one in four comments. Keep it uneven so the additions do not form a
-mechanically uniform layer. Under-injection is the failure mode, not over-injection.
+evolution scars. **Inject heavily.** Alter **at least 80% of the lines** in each file with inline whitespace
+entropy (in Python, inside the line only, never the indent column, or it raises
+`IndentationError`). Put **about half of all comments** on a no-space `#` (existing and injected;
+AI always writes the space, so an all-spaced file is a tell). Add many casual comments and several
+commented-out lines per file, and a typo or punctuation slip in about one in four comments. Keep
+the *kind* of edit varied so it is not one mechanical pattern. Under-injection is the failure
+mode, not over-injection.
 
 - Read **`HUMAN-SIGNALS.md`** for the H1-H50 catalog, the SAFE/CONDITIONAL/FLAG tier, the
   injection-volume rule, the complete-reference rename checklist, and the per-file process.

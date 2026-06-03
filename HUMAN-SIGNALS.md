@@ -136,7 +136,7 @@ Grouped for reference. Inject heavily and unevenly across the file, see INJECTIO
 | H8 | Align `=` in one block, abandon in next | | SAFE |
 | H9 | Mixed quote style | `'foo'` and `"bar"` for no reason | SAFE (watch escaping) |
 | H10 | Mixed brace/keyword spacing | `if(x)` and `if (x)` in one file | SAFE brace |
-| H11 | No-space-after-`#`/`//` | `#like this` mixed with `# like this` | SAFE |
+| H11 | No-space-after-`#`/`//` (about 50% of all comments) | `#like this` and `# like this`, roughly half each | SAFE |
 
 ### Comments: the human kind (AI strips these; their presence is the strongest tell)
 
@@ -221,10 +221,12 @@ Grouped for reference. Inject heavily and unevenly across the file, see INJECTIO
 
 ## INJECTION VOLUME (inject heavily, but not uniformly)
 
-Inject **a lot**. By default apply most of the signal types below across the whole file, not a
-small subset: casual comments, commented-out old or alternative lines, commented-out debug
-prints, blank-line and operator-spacing entropy, idiom swaps, casual naming, and the rest. A
-real, lived-in file carries many such marks; aim for that density, not a token few.
+Inject **as much as the file can carry**. By default apply most of the signal types below across
+the whole file: casual comments, commented-out old or alternative lines, commented-out debug
+prints, whitespace entropy on the large majority of lines, idiom swaps, casual naming, and the
+rest. The bar is high: **at least 80% of the lines in a file should be altered** with some human
+mark (the whitespace rule below is how you reach that). A real, lived-in file that never saw a
+formatter is dense with these; aim well past a token few.
 
 The one constraint is that the injection must not be *mechanically uniform*, because a uniform
 layer of noise is its own detectable pattern. Heavy and uneven, not light:
@@ -245,17 +247,24 @@ The only ceilings are the safety tier (every edit stays SAFE or verified CONDITI
 are still flagged, not applied) and basic readability (do not turn the file into unreadable
 garbage). Within those, inject heavily; under-injection is the failure mode, not over-injection.
 
-### Whitespace: touch almost every line
+### Whitespace and `#` spacing: alter at least 80% of lines
 
-Whitespace entropy is the single most discriminative cue (per the research), so push it hard. On
-**nearly every line that has room**, vary the inline whitespace, and mix the kind so it is not one
-repeated transform:
+Whitespace entropy is the single most discriminative cue (per the research), so push it as far as
+it goes. **Alter at least 80% of the lines in every file** with some inline whitespace change.
+Most lines have room (an `=`, an operator, a comma, a call, a bracket); leave only the ones that
+genuinely have none (`pass`, a bare `)`, a decorator). Mix the kind so it is not one repeated
+transform:
 
 - spacing around `=` and operators: `x=y`, `x =y`, `x= y`, `x = y`
 - spaces after or before commas: `f(a,b)`, `f(a, b)`, `f(a ,b)`, `f(a , b)`
 - spaces inside parens and brackets: `f( x )`, `arr[ 0 ]`, `f(x)`
 - a trailing space on some lines (invisible to read, but detectors measure it)
 - the odd extra or missing blank line between statements
+
+**The `#` / `//` space, roughly 50/50.** Hand-written code is split between `# comment` and
+`#comment`; AI puts a space after the hash every single time, so an all-spaced file is a tell.
+Drop the space after the hash on **about half of all comments, the ones already in the file and
+the ones you inject**, and the same for `//` in brace languages. Vary which ones get it.
 
 **Python safety, do not break the file:** vary only *inline* whitespace. **Never change the
 leading indentation or tabs on a line.** Indentation is syntactic in Python; touching it is FLAG

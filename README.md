@@ -263,6 +263,12 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.8.0**: Turned injection up to hard quantified targets. **At least 80% of the lines in a
+  file** now get some inline whitespace change, and the `#`/`//` space goes **roughly 50/50** so
+  about half of all comments (existing and injected) have no space after the hash (AI always adds
+  it, so an all-spaced file is a tell). Same safety rails: Python leading indentation is never
+  touched (FLAG), and typos stay in comment and string text, never identifiers. Updated the
+  INJECTION VOLUME and whitespace rules in `HUMAN-SIGNALS.md`.
 - **1.7.0**: Dialed injection up with two concrete targets. **Inline whitespace entropy on nearly
   every line** (varied spacing around `=`, operators, commas, and parens, plus trailing spaces),
   and a **typo or punctuation slip in about one in four comments** (plausible misspellings, a
