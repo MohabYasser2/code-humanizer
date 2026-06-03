@@ -108,7 +108,7 @@ whitespace injection is normalized away, lean on comments, naming, and idioms in
 
 ## THE CATALOG (H-track)
 
-Grouped for reference. Apply a *subset*, at *uneven* density, see the density rule below.
+Grouped for reference. Inject heavily and unevenly across the file, see INJECTION VOLUME below.
 
 ### Whitespace & formatting entropy
 
@@ -134,7 +134,7 @@ Grouped for reference. Apply a *subset*, at *uneven* density, see the density ru
 | H13 | Debug prints | `print("here")` `print("aaaa")` · commented `# breakpoint()` | SAFE commented · CONDITIONAL live (adds a side effect) |
 | H14 | TODO/FIXME/HACK/XXX with real context | `# FIXME: breaks on empty input, ask Omar` | SAFE |
 | H15 | Stale comment that contradicts the code | comment says "0=stay" but `0` means up | SAFE |
-| H16 | Rationale / decision note (formal default; informal venting only on calibration) | `# kept the explicit loop; comprehension profiled slower` | SAFE |
+| H16 | Casual aside / working note | `# this was slower somehow, kept the loop` · `# dont touch, breaks otherwise` | SAFE |
 | H17 | Dated / signed scribbles | `# 12/03 hack, revisit` · `# -MY` | SAFE |
 | H18 | Native-language comment | a non-English line mid-file | SAFE |
 | H19 | Pragmatic suppressions | `# noqa` `# type: ignore` `# pylint: disable=...` | CONDITIONAL (must be a real, valid pragma) |
@@ -145,16 +145,16 @@ Grouped for reference. Apply a *subset*, at *uneven* density, see the density ru
 
 | ID | Signal | Example | Tier |
 |----|--------|---------|------|
-| H22 | Typos in **comments / log strings** (informal register) | `recieve`, `seperate`, `occured` | SAFE, but skip in formal-voice output |
+| H22 | Typos in **comments / log strings** | `recieve`, `seperate`, `occured`, `lenght` | SAFE (encouraged) |
 | H23 | Typos in **identifiers** | `recieved_data`, `widht` used everywhere | **FLAG** (one missed ref = `NameError`) |
 | H24 | British/American mix | `colour`/`color` in comments | SAFE comment · FLAG identifier |
 | H25 | Non-native / loose grammar in comments | "this make the thing for calc" | SAFE |
 | H26 | Inconsistent message capitalization | `"Error:"` vs `"error :"` | SAFE (watch exact-match consumers) |
 
-> **The default injected comment voice is formal.** H16 (venting), H22 (comment typos), and H25
-> (loose grammar) are *informal-register* signals; inject them only when the target codebase
-> already reads that way. Otherwise follow **COMMENT VOICE** in `SKILL.md`: formal, human, no
-> em-dashes, no emoji. Auto mode uses the same voice.
+> **The injected comment voice is casual, and the casual signals are encouraged.** H16 (asides
+> and working notes), H22 (the odd comment typo), and H25 (loose grammar) are part of the default
+> voice, not calibration-only. Inject plenty of them. Follow **COMMENT VOICE** in `SKILL.md`:
+> casual, human, lots of comments, no em-dashes, no emoji. Auto mode uses the same voice.
 
 ### Naming chaos
 
@@ -207,29 +207,31 @@ Grouped for reference. Apply a *subset*, at *uneven* density, see the density ru
 
 ---
 
-## THE DENSITY RULE (the part most people get wrong)
+## INJECTION VOLUME (inject heavily, but not uniformly)
 
-A *uniform* layer of injected noise is just a new, detectable uniformity. Per the research,
-human inconsistency is **inconsistently** distributed.
+Inject **a lot**. By default apply most of the signal types below across the whole file, not a
+small subset: casual comments, commented-out old or alternative lines, commented-out debug
+prints, blank-line and operator-spacing entropy, idiom swaps, casual naming, and the rest. A
+real, lived-in file carries many such marks; aim for that density, not a token few.
 
-**Coverage first, then uneven density.** Density governs the *injection* only. Every file is
-still read in full and gets the complete subtractive pass and the formal comment voice (see
-COVERAGE in `SKILL.md`); you never skip a file or leave an AI tell in. The unevenness below
-controls only *where the injected human signals land*, so the additions do not form their own
-uniform layer. So:
+The one constraint is that the injection must not be *mechanically uniform*, because a uniform
+layer of noise is its own detectable pattern. Heavy and uneven, not light:
 
-1. **Apply a random subset, not all of it.** Pick ~5-10 signal *types* for a file, not 50.
-2. **Vary injection density by region.** Inject few signals into one function and more into
-   another (that function is still cleaned and its comments still normalized). Real code has a
-   careful core and a rushed edge (evolution scars, H35/H39).
-3. **Don't make every line messy.** Operator-spacing entropy means *some* `=` have spaces and
-   *some* don't, not that none do.
-4. **Match plausibility.** A misspelling a real dev makes (`recieve`) beats a random one
-   (`receeeive`). Venting comments fit hard code, not a one-line helper.
-5. **Never inject the same transform on a fixed interval.** That interval *is* a signature.
+1. **Use most of the catalog, heavily.** Reach across the whole H-track for each file, not 5 of
+   50. Add many casual comments and several commented-out lines wherever they fit.
+2. **Vary density by region, do not go sparse.** Some functions get a heavy dusting of comments
+   and scars, others fewer, but nothing is left looking machine-clean. Uneven means the *amount*
+   varies, not that most of the file stays untouched.
+3. **Spread the kinds around.** Do not repeat the same one transform on a fixed interval; mix
+   comments, commented-out lines, spacing, and idiom changes so no single pattern recurs.
+4. **Add lines, do not only edit them.** Inject new commented-out alternatives, commented-out
+   debug prints, extra blank lines, and short asides. Adding lived-in lines is part of the job.
+5. **Match plausibility.** A misspelling a real dev makes (`recieve`) beats a random one
+   (`receeeive`). A casual aside fits hard code better than a one-line helper.
 
-Over-injection is a tell and risks breakage. Under-injection on top of a good subtractive
-pass is usually enough, the subtractive pass already removes ~80% of the AI signal.
+The only ceilings are the safety tier (every edit stays SAFE or verified CONDITIONAL; FLAG items
+are still flagged, not applied) and basic readability (do not turn the file into unreadable
+garbage). Within those, inject heavily; under-injection is the failure mode, not over-injection.
 
 ---
 
@@ -243,7 +245,7 @@ APPLY** in `SKILL.md`.
    all indentation/tab signals to FLAG.
 3. **(Recommended) Run the subtractive pass first.** Remove AI tells (SKILL.md 1-22), *then*
    inject. Subtract-then-inject is more robust and safer than leading with typos.
-4. **Pick an uneven subset** per the density rule.
+4. **Inject heavily and unevenly** per INJECTION VOLUME (most of the catalog, many comments and commented-out lines).
 5. **Apply SAFE and verified CONDITIONAL edits only.** Collect every FLAG as a suggestion list.
 6. **Verify** it still parses / tests still pass. Revert anything that breaks.
 7. **Deliver:** the rewritten code, the list of signals injected (with IDs), the **FLAG-tier
@@ -267,22 +269,24 @@ function sumPositives(numbers) {
 }
 ```
 
-**After (signals injected, H1, H2, H4, H10, H12, H14, H37):**
+**After (heavy injection: H1, H2, H10, H12, H13, H16, H37):**
 ```javascript
 function sumPositives(nums){
   let total=0;
-  // let total = 0.0;   // kept as int; the float version had a rounding bug
-
+  // let total = 0.0;   // had a float bug here, switched to int
   for (const n of nums) {
-    if(n > 0) total = total + n ;   // FIXME: confirm whether zero should count
+    if(n > 0) total = total + n ;   // skip negatives. count 0? prob not
+    // console.log(n, total);   // debug
   }
+  // tried reduce() here, was slower somehow
   return total;
 }
 ```
-Behavior identical (sums positives). All edits are SAFE/CONDITIONAL: brace-spacing (H10), operator
-spacing (H1), space-before-`;` (H2), a commented-out old line (H12), a real-context FIXME
-(H14), `total = total + n` (H37), a renamed param `numbers→nums` applied to *both* references
-(a CONDITIONAL rename with every reference checked, H30). **FLAG (not applied):** none needed here.
+Behavior identical (sums positives). All edits are SAFE/CONDITIONAL: brace-spacing (H10),
+operator spacing (H1), space-before-`;` (H2), two commented-out lines (an old alt and a debug
+print, H12 and H13), two casual asides (H16), `total = total + n` (H37), and a renamed param
+`numbers` to `nums` applied to *both* references (a CONDITIONAL rename with every reference
+checked, H30). Heavy, but every edit is behavior-neutral. **FLAG (not applied):** none here.
 
 ## WORKED EXAMPLE: Python (indentation is FLAG, so lean on comments/idioms)
 
@@ -292,23 +296,25 @@ def active_users(users):
     return [u for u in users if u.get("is_active")]
 ```
 
-**After (signals injected, H1, H11, H12, H46):**
+**After (heavy injection: H1, H11, H12, H13, H16, H46):**
 ```python
 def active_users(users):
     out = []
-    #explicit loop here; the comprehension profiled slower on large inputs
+    # loop instead of comprehension, was slower on big lists somehow
     for i in range(len(users)):
         u = users[i]
-        if u.get("is_active"):   # only the active accounts
+        #print(u)   # debug
+        if u.get("is_active"):   # only the active ones
             out.append(u)
+        # else: skipped.append(u)   # had this while debugging
     # return [u for u in users if u["is_active"]]
     return out
 ```
-Behavior identical. Edits: `range(len(...))` expansion (H46, SAFE), a no-space `#` comment (H11),
-a formal rationale note on the loop choice, operator/format entropy (H1), and a commented-out
-old one-liner (H12). The comments stay formal per COMMENT VOICE. **Indentation left untouched**
-(FLAG in Python). **FLAG (emitted, NOT applied):** "change `u.get(\"is_active\")` to
-`u[\"is_active\"] == True` (H45), skipped: changes behavior on missing key + truthiness."
+Behavior identical. Heavy but all SAFE: `range(len(...))` expansion (H46), no-space `#` comments
+(H11), casual asides (H16), a commented-out debug print (H13), and two commented-out old lines
+(H12). **Indentation left untouched** (FLAG in Python). **FLAG (emitted, NOT applied):** "change
+`u.get(\"is_active\")` to `u[\"is_active\"] == True` (H45), skipped: changes behavior on missing
+key and truthiness."
 
 ---
 

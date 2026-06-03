@@ -20,7 +20,7 @@ It has **three modes**:
 The auto and additive tracks are governed by a SAFE/CONDITIONAL/FLAG safety tier, so they never
 auto-apply an edit that could change behavior or break. See
 [Human-signal injection](#human-signal-injection) below. Every comment the skill writes,
-in any mode, is **formal and human: no em-dashes, no emoji, no AI-writing tells.**
+in any mode, is **casual and human (a real dev's working notes): lots of comments, no em-dashes, no emoji, no AI-writing tells.**
 
 The model does the editing itself: it reads each file in full and edits it directly, **never by
 generating a script** to find-and-replace (a script does shallow, mechanical substitution and
@@ -197,10 +197,11 @@ The H-track has 50 signals across seven groups:
 | Import habits (H41-H44) | mid-file imports, unused leftovers, commented-out imports | SAFE |
 | Legacy idioms (H45-H49) | `range(len(x))`, redundant parens, `== True` | `== True`/`== None` are FLAG |
 
-Plus the **density rule**: apply an *uneven* subset (5-10 signal types per file), not a
-uniform layer, a uniform layer of noise is just a different detectable uniformity. And a hard
-**language branch**: in Python, never touch leading indentation or tabs (syntactic → FLAG); all
-Python entropy comes from operator spacing, blank lines, comments, and idioms.
+Plus the **injection-volume rule**: inject heavily, most of the catalog across each file, with
+many casual comments and commented-out lines, kept uneven so it is not a mechanically uniform
+layer. And a hard **language branch**: in Python, never touch leading indentation or tabs
+(syntactic → FLAG); all Python entropy comes from operator spacing, blank lines, comments, and
+idioms.
 
 For **JavaScript, TypeScript, and C#**, [`LANGUAGES.md`](LANGUAGES.md) carries the per-language
 tiers and traps, TS type edits are compile-gated CONDITIONAL; JS `===`→`==` and `let`→`var` are FLAG; C#
@@ -258,6 +259,14 @@ strict TypeScript build.
 
 ## Version History
 
+- **1.5.0**: Turned injection up and the comment voice loose. Injection is now **heavy by
+  default** (the old density rule that said "under-injection is the correct outcome" and "pick 5
+  of 50 signals" is replaced by INJECTION VOLUME: use most of the catalog across each file, add
+  many casual comments and commented-out lines, stay heavy but uneven). The comment voice changed
+  from formal to **casual** (a real dev's working notes: terse, lowercase, shorthand like
+  `# tried X, too weak`), and the casual signals (H16 asides, H22 comment typos, H25 loose
+  grammar) are now encouraged defaults, not calibration-only. Em-dash-free, emoji-free, and the
+  safety tier are unchanged, so heavier output still never breaks behavior.
 - **1.4.0**: The skill now runs on a **whole folder or repository**, not just a pasted snippet or
   a single named file. Given a directory, it enumerates the first-party source (via
   `git ls-files` or Glob), skips dependencies, build output, and generated or binary files, then

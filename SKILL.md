@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 1.4.0
+version: 1.5.0
 description: |
   Remove signs of AI-generated code so source reads as natural, idiomatic, human-written
   code, without changing what it does. Use when editing or reviewing code to strip AI
@@ -16,8 +16,10 @@ description: |
   clean-only mode does the removal without injection. The model reads and edits each file
   itself, by hand, never with a generated script, and processes everything, including code that
   looks human-written. It runs on a single snippet, a whole file, or an entire folder or
-  repository, processing every source file in the folder, not just one. Every comment the skill
-  writes is formal and human, with no em-dashes and no emoji.
+  repository, processing every source file in the folder, not just one. In auto mode it injects
+  heavily: lots of casual comments, commented-out lines, formatting entropy, and idiom and naming
+  changes throughout each file. Every comment it writes is casual and human (a real dev's working
+  notes), with no em-dashes and no emoji.
 license: MIT
 compatibility: claude-code opencode
 allowed-tools:
@@ -64,7 +66,7 @@ whole of clean-only mode:
 1. **Identify AI patterns**: scan for the patterns listed below.
 2. **Rewrite, preserve behavior**: change style and structure, never logic. See THE BEHAVIOR CONTRACT.
 3. **Match the surrounding style**: fit the file's or repo's existing conventions (see Style Calibration). When none is given, default to plain, idiomatic Python.
-4. **Cover everything, preserve meaning**: process every region, including human-looking code (see COVERAGE). Keep comments that record a real why; rewrite them to the formal voice rather than deleting them.
+4. **Cover everything, preserve meaning**: process every region, including human-looking code (see COVERAGE). Keep comments that record a real why; rewrite them to the casual voice rather than deleting them.
 
 The draft → behavior-check → audit → final loop and the deliverable are defined under Process and Output, below.
 
@@ -76,7 +78,7 @@ own tools (Read, then Edit or Write). Do **not** write or run a script (sed, awk
 or regex find-and-replace, an automated codemod) to transform the code. A script does blind,
 mechanical substitution: it catches only the one pattern you encoded, applies no judgment,
 misses every semantic rewrite (renaming, restructuring, idiom changes, rephrasing a comment to
-the formal voice), and can corrupt syntax it does not understand. The result is a shallow diff,
+the casual voice), and can corrupt syntax it does not understand. The result is a shallow diff,
 for example swapping a single punctuation mark, instead of a real humanization. Scripts are
 allowed only for verification after you have made the edits by hand: running tests, a type
 check, a compile, or a parse check.
@@ -85,8 +87,8 @@ Work file by file:
 1. Read the whole file first and understand what it does.
 2. Apply every relevant pattern and signal yourself, edit by edit, choosing each change with an
    understanding of the surrounding code. When you replace an em-dash in a comment, pick the
-   formal punctuation the sentence needs (a period, comma, semicolon, colon, or parentheses),
-   not a blanket hyphen.
+   punctuation the sentence needs (a period, comma, semicolon, colon, or parentheses, or just a
+   space), not a blanket hyphen.
 3. Go top to bottom and cover the entire file. See COVERAGE.
 
 
@@ -94,14 +96,14 @@ Work file by file:
 
 Run the full pass on every file, function, and block you are given, top to bottom. Do not skip
 anything because it "looks human-written" or "looks already clean." Suspected-human code still
-gets the full treatment: re-read it, normalize its comments to the formal voice (COMMENT VOICE),
+gets the full treatment: re-read it, normalize its comments to the casual voice (COMMENT VOICE),
 remove any AI tells present, and, in auto mode, inject the human signals the safety tier allows.
 
 The only limits are the two hard ones, and neither is a reason to skip a file:
 - **Behavior.** Every edit obeys THE BEHAVIOR CONTRACT and the SAFE/CONDITIONAL/FLAG tier. FLAG
   items are still flagged, not applied.
 - **Meaning.** Do not delete a comment that records a real reason (a why, a constraint, a
-  ticket). Rewrite it to the formal voice instead of dropping it.
+  ticket). Rewrite it to the casual voice instead of dropping it.
 
 "Do not over-correct" means do not break behavior and do not destroy meaning. It does not mean
 skip files that look human. Cover everything.
@@ -150,23 +152,26 @@ Code is not prose. You cannot freely reword it. Every rewrite must satisfy these
 
 ## COMMENT VOICE (whenever the skill writes or rewrites a comment)
 
-Any comment the skill produces, whether it survives a subtractive rewrite or is injected in auto
-or additive mode, must read like a formal note from a real maintainer. Not AI prose, and not
-casual chat.
+Comments must read like a real developer's working notes: casual, terse, lived-in. Not AI prose.
+Match the loose, lowercase, shorthand style of genuine human comments, for example
+`# tried 0.02, too weak`, `# was 0.008`, `# got farmed`, `# todo tune this`, `# hack, fix later`.
 
-- **Explain why, not what.** A comment earns its place by recording a reason, a constraint, a
-  decision, or a gotcha. Never restate the code.
-- **Formal register.** Write complete, professional phrasing. No slang ("lol", "count em up"),
-  no venting, no filler. `TODO`, `FIXME`, and `NOTE` are fine when they carry real, specific
-  context (a condition, a ticket, a name).
-- **No em-dashes.** Use a period, comma, semicolon, colon, or parentheses instead.
+- **Casual and human.** Lowercase is fine. Terse is good. Drop articles and end punctuation the
+  way a dev jotting a note does. A no-space `#comment` is fine. Write the way someone in a hurry
+  writes, not the way a doc generator writes.
+- **Explain why, or just leave a working note.** Record a reason, a tuning result, a gotcha, a
+  thing you tried (`# tried X, too slow`), a reminder (`# todo`, `# fixme`, `# hack`), or a quick
+  aside. Do not restate what the line plainly does.
+- **No em-dashes.** Use a period, comma, semicolon, colon, or parentheses, or just a space.
 - **No emoji**, in comments or in any string the skill writes.
-- **No AI-writing tells.** No "Note that...", no tutorial voice ("Here we..."), no rule-of-three
-  phrasing, no inflated adjectives, no "not just X, but Y".
-- **Keep it short.** One line where the point fits on one line.
-- **Calibration wins.** If the surrounding file has its own comment habits, match them. The
-  informal signals in `HUMAN-SIGNALS.md` (venting, comment typos, lowercase shorthand) are used
-  only when the target codebase already reads that way; the default voice is formal.
+- **No AI-writing tells.** No "Note that...", no tutorial voice ("Here we...", "Now we..."), no
+  rule-of-three, no inflated adjectives, no "not just X, but Y", and no stiff full sentences
+  where a fragment is what a human would jot.
+- **Comment a lot, and vary placement.** Add many comments, not a token few. Put some inline at
+  end of line, some on the line above, some as a short aside mid-block. Heavy in some spots,
+  none in others.
+- **Calibration wins.** If the file already has a comment style, match it. Otherwise default to
+  this casual voice.
 
 
 ## Style Calibration (recommended)
@@ -635,8 +640,8 @@ commented-out trial code, lived-in `FIXME`s, idiosyncratic naming, evolution sca
   injection pass. Additive mode (`--inject-signals`) runs injection alone, for already-clean
   code. Only **clean-only** mode (`--clean-only`) skips it.
 - **When asked, read `HUMAN-SIGNALS.md`** and follow it. That file holds the H-track catalog
-  (H1-H50), a SAFE/CONDITIONAL/FLAG safety tier, a per-language whitespace matrix, the density rule, and the
-  injection process.
+  (H1-H50), a SAFE/CONDITIONAL/FLAG safety tier, a per-language whitespace matrix, the
+  injection-volume rule (inject heavily), and the injection process.
 - **For JavaScript, TypeScript, or C# code, also read `LANGUAGES.md`**: per-language tiers
   (TS type edits are compile-gated; JS `===`/`var` swaps and C# field renames are flag-only)
   and the formatter caveat (Prettier / `dotnet format` normalize injected whitespace away).
@@ -658,9 +663,9 @@ underlying content intact:
 
 - **A typed codebase** stays typed. Do not strip annotations to look casual.
 - **Genuinely useful docstrings** on public APIs and complex functions are good practice. Keep
-  the content, and bring the wording into the formal voice.
+  the content, and bring the wording into the casual voice.
 - **Comments that explain *why*** (a workaround, a constraint, a ticket reference) are the most
-  human thing in a file. Never delete them; rephrase to the formal voice if needed.
+  human thing in a file. Never delete them; rephrase to the casual voice if needed.
 - **A real `__main__`, real logging, real error handling** for reachable failures are
   legitimate. Do not remove them as "AI tells."
 - **Project conventions** (a mandated envelope return, a house naming scheme) outrank your idiom
