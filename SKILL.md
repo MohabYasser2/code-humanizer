@@ -533,13 +533,13 @@ idiosyncratic naming, evolution scars.
 - **It is off by default.** Run it **only when the user explicitly asks** ("inject human
   signals", "make it look hand-written", `--inject-signals`).
 - **When asked, read `HUMAN-SIGNALS.md`** and follow it. That file holds the H-track catalog
-  (H1–H50), a 🟢/🟡/🔴 safety tier, a per-language whitespace matrix, the density rule, and the
+  (H1–H50), a SAFE/CONDITIONAL/FLAG safety tier, a per-language whitespace matrix, the density rule, and the
   injection process.
 - **For JavaScript, TypeScript, or C# code, also read `LANGUAGES.md`** — per-language tiers
   (TS type edits are compile-gated; JS `===`/`var` swaps and C# field renames are flag-only)
   and the formatter caveat (Prettier / `dotnet format` normalize injected whitespace away).
-- **The hard safety rule:** auto-apply only 🟢 (provably behavior-neutral) and *verified* 🟡
-  edits. 🔴 edits (identifier typos, Python indentation/tab changes, `== True`/`== None`
+- **The hard safety rule:** auto-apply only SAFE (provably behavior-neutral) and *verified* CONDITIONAL
+  edits. FLAG edits (identifier typos, Python indentation/tab changes, `== True`/`== None`
   semantics) are **flagged for the human, never written by the skill.** This is what keeps
   injected code working.
 - **Order:** run the subtractive pass first, then inject — it is more robust and safer than
