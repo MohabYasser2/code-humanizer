@@ -263,6 +263,14 @@ strict TypeScript build.
 
 ## Version History
 
+- **2.1.0**: The phase-2 whitespace script now handles **all the brace languages**, not just
+  Python. `scripts/whitespace_entropy.py` dispatches by extension: Python uses the stdlib
+  tokenizer (and never the indentation); JavaScript, TypeScript, C#, C/C++, and Java use a generic
+  lexer that protects strings, chars, and comments and perturbs whitespace only around the
+  delimiters `()[]{},;` and a standalone `=` (positions that can never merge two tokens), plus the
+  50/50 `//` comment split. Each pass self-verifies, and it was tested on real code in every
+  language: behavior identical and it compiles (`node --check`, `tsc --strict`, `dotnet`). Go and
+  Rust are accepted with a formatter caveat.
 - **2.0.0**: Split the pass into **two phases**, which finally fixes "the humanizer under-changes
   the code." **Phase 1 (by hand)** is the judgment work the model is good at and must not pull
   punches on: subtractive removal of AI tells, variable and function renames, idiom swaps, casual

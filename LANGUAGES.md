@@ -160,3 +160,8 @@ When the injection track runs (auto mode by default, or additive mode), after th
 2. Pull that language's SAFE set from the matrix above; demote anything language-risky to FLAG.
 3. Apply SAFE + verified CONDITIONAL edits only; collect FLAG items as suggestions. Then compile/parse-check with the language's tool
    (`tsc --noEmit`, `node --check`, `dotnet build`, etc.) and revert anything that breaks.
+
+The inline-whitespace entropy for these languages is the phase-2 script's job
+(`python scripts/whitespace_entropy.py FILE`): it protects strings, chars, and comments and
+perturbs only around delimiters and a standalone `=`. Skip it where a formatter (Prettier,
+`dotnet format`, gofmt) is configured, since the entropy would be erased on the next format.

@@ -1,6 +1,6 @@
 ---
 name: code-humanizer
-version: 2.0.0
+version: 2.1.0
 description: >-
   Humanize source code so it reads as natural, hand-written work rather than AI-generated,
   without changing behavior. Use whenever the user wants to humanize, naturalize, or de-AI code,
@@ -113,8 +113,10 @@ It lays down inline whitespace entropy and the 50/50 `#` split on about half the
 **only** the whitespace between tokens and the space after `#`, never indentation or string
 contents. It re-tokenizes its own output and aborts if any code token changed, so behavior is
 provably preserved. This is the one place a script is correct, because whitespace needs no
-judgment. (It is Python-only, since indentation is syntactic; for other languages hand-apply the
-whitespace signals from `HUMAN-SIGNALS.md`.)
+judgment. It handles **Python and the brace family** (JavaScript, TypeScript, C#, C/C++, Java);
+for Python it never touches indentation, and for brace languages it perturbs only around
+delimiters and a standalone `=` (positions that cannot merge tokens). Go and Rust work too, but
+their formatters erase the entropy. Verify the result with the language's own compiler.
 
 **Cover everything.** Process every file and region top to bottom, including code that looks
 human-written. "Looks clean" is never a reason to skip. The only limits are behavior (above) and
